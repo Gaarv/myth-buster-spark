@@ -5,6 +5,6 @@ package com.octo.nad;
  */
 public interface Talker {
 
-    public void talk();
+    void talk(String message);
 
 }

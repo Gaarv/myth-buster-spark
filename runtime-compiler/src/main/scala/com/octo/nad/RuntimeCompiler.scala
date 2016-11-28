@@ -1,10 +1,13 @@
 package com.octo.nad
 
+import java.io.File.pathSeparator
 import java.io.{File, PrintWriter}
 import java.net.{URL, URLClassLoader}
 import java.nio.file.{Files, Path, Paths}
 
 import com.google.common.reflect.Reflection
+
+import scala.util.{ Try, Success, Failure }
 
 /**
   * Created by adrien on 24/11/2016.
@@ -12,69 +15,38 @@ import com.google.common.reflect.Reflection
 object RuntimeCompiler {
 
   def main(arguments: Array[String]): Unit = {
-    println("Hello, world! ")
-    val generatedClassSimpleName = "CatTalker"
-    val generatedClassName = s"com.octo.nad.${generatedClassSimpleName}"
+    val classSimpleName = "CatTalker"
+    val className = s"com.octo.nad.${classSimpleName}"
     val classSource =
       s"""
         |package com.octo.nad;
         |
         |import com.octo.nad.Talker;
         |
-        |public class ${generatedClassSimpleName} implements Talker {
+        |public class ${classSimpleName} implements Talker {
         |
         |    @Override
-        |    public void talk() {
-        |       System.out.println("Meow! ");
+        |    public void talk(String message) {
+        |       System.out.println("Meow! " + message);
         |    }
         |
         |}
         |
       """.stripMargin
 
-    val generatedClass = compileClass(generatedClassName, classSource)
-    val talker = generatedClass.newInstance().asInstanceOf[Talker]
 
-    talker.talk()
-  }
+    val talker = for {
+      runtimeCompiledClass <- JavacJavaClassCompiler.compile(JavaClassSpec(className, classSource))
+      runtimeCompiledClassInstance <- Try {
+        runtimeCompiledClass.newInstance().asInstanceOf[Talker]
+      }
+    } yield runtimeCompiledClassInstance
 
-  def compileClass(className: String, classSource: String): Class[_] = {
-    val parentClassLoader = getClass.getClassLoader
-    val generatedClassesFolder = Files.createTempDirectory("generated-classes")
-    val generatedSourcesFolder = Files.createTempDirectory("generated-sources")
+    talker match {
+      case Success(talker) => talker.talk("Hello, World! ")
+      case Failure(e) => println(s"Unable to do compilation at runtime (${e.getMessage})")
 
-    val generatedClassSourcePath = writeClassSource(className, classSource, generatedSourcesFolder)
-
-    javac(className, generatedClassSourcePath, generatedClassesFolder)
-
-    val classFolderURL = generatedClassesFolder.toUri.toURL
-    val classLoader = new URLClassLoader(Array(generatedClassesFolder.toUri.toURL), parentClassLoader)
-    classLoader.loadClass(className)
-  }
-
-  def javac(className: String, classSourceFilePath: Path, classFolderPath: Path): Unit = {
-    val process = Runtime.getRuntime.exec(Array("javac", "-cp", currentClassPath(), "-d", classFolderPath.toString, classSourceFilePath.toString))
-    process.waitFor()
-  }
-
-  def writeClassSource(className: String, classSource : String, sourceFolderPath : Path): Path = {
-    val relativePackageFolderPath = Paths.get(Reflection.getPackageName(className).replace('.', '/'))
-    val packageFolderPath = sourceFolderPath.resolve(relativePackageFolderPath)
-    Files.createDirectories(packageFolderPath)
-
-    val simpleClassName = className.split('.').last
-
-    val classSourcePath = packageFolderPath.resolve(s"${simpleClassName}.java")
-    val writer = new PrintWriter(Files.newOutputStream(classSourcePath))
-    writer.write(classSource)
-    writer.close()
-
-    classSourcePath
-  }
-
-  def currentClassPath(): String = {
-    val pathSeparator = System.getProperty("path.separator")
-    Thread.currentThread().getContextClassLoader.asInstanceOf[URLClassLoader].getURLs.map(_.getPath).mkString(pathSeparator)
+    }
   }
 
 }
