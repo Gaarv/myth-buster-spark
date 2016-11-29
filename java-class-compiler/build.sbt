@@ -1,4 +1,4 @@
-name := "runtime-compiler"
+name := "Java Class Compiler"
 
 version := "1.0"
 
