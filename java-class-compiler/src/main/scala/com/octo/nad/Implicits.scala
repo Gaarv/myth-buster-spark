@@ -9,7 +9,7 @@ object Implicits {
     def byCompiling(javaClassName: String, javaSourceCode: String)(implicit javaClassCompiler: JavaClassCompiler): Talker.Builder = {
       javaClassCompiler.compile(JavaClassSpec(javaClassName, javaSourceCode)) match {
         case Success(compiledClass) => talkerBuilder.usingClass(compiledClass.asInstanceOf[Class[_ <: Talker]])
-        case Failure(e) => throw new TalkerException(s"Unable to do JIT compilation of ${javaClassName}", e);
+        case Failure(e) => throw new TalkerException(s"Unable to do JIT compilation of $javaClassName", e);
       }
     }
 

@@ -15,14 +15,14 @@ class RuntimeCompilerSpec extends BenchSpec {
   } yield 0 until size
 
   val classSimpleName = "CatTalker"
-  val className = s"com.octo.nad.${classSimpleName}"
+  val className = s"com.octo.nad.$classSimpleName"
   val classSourceCode =
     s"""
        |package com.octo.nad;
        |
         |import com.octo.nad.Talker;
        |
-        |public class ${classSimpleName} implements Talker {
+        |public class $classSimpleName implements Talker {
        |
         |    @Override
        |    public void talk(String message) {
