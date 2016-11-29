@@ -9,6 +9,9 @@ import com.google.common.reflect.Reflection
 
 import scala.util.{ Try, Success, Failure }
 
+import Implicits._
+import JavaClassCompiler.global
+
 /**
   * Created by adrien on 24/11/2016.
   */
@@ -17,7 +20,7 @@ object RuntimeCompiler {
   def main(arguments: Array[String]): Unit = {
     val classSimpleName = "CatTalker"
     val className = s"com.octo.nad.${classSimpleName}"
-    val classSource =
+    val classSourceCode =
       s"""
         |package com.octo.nad;
         |
@@ -35,18 +38,25 @@ object RuntimeCompiler {
       """.stripMargin
 
 
-    val talker = for {
-      runtimeCompiledClass <- JavacJavaClassCompiler.compile(JavaClassSpec(className, classSource))
+    /*val maybeTalker = for {
+      runtimeCompiledClass <- JavacJavaClassCompiler.compile(JavaClassSpec(className, classSourceCode))
       runtimeCompiledClassInstance <- Try {
         runtimeCompiledClass.newInstance().asInstanceOf[Talker]
       }
     } yield runtimeCompiledClassInstance
 
-    talker match {
+    maybeTalker match {
       case Success(talker) => talker.talk("Hello, World! ")
       case Failure(e) => println(s"Unable to do compilation at runtime (${e.getMessage})")
 
-    }
+    }*/
+
+    implicit val javaClassCompiler: JavaClassCompiler = JavacJavaClassCompiler
+
+    val talker = Talker.builder()
+        .byCompiling(className, classSourceCode)
+      .build()
+    talker.talk("Message")
   }
 
 }

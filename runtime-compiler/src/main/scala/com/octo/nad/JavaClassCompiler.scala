@@ -7,3 +7,9 @@ trait JavaClassCompiler {
   def compile(javaClassSpec: JavaClassSpec[_]): Try[Class[_]]
 
 }
+
+object JavaClassCompiler {
+
+  implicit val global = JavacJavaClassCompiler
+
+}
