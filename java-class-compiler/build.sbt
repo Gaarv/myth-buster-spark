@@ -12,6 +12,9 @@ testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework")
 
 logBuffered := false
 
-fork in Test := true
+fork := true
+
 
 parallelExecution in Test := false
+
+mainClass in (Compile, run) := Some("com.octo.nad.JavaClassCompilerExample")
