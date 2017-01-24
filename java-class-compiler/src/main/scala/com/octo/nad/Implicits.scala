@@ -1,6 +1,7 @@
 package com.octo.nad
 
 import scala.util.{ Success, Failure }
+import scala.language.implicitConversions
 
 object Implicits {
 
