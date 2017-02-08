@@ -1,6 +1,6 @@
-package com.octo.mythbuster
+package com.octo.mythbuster.spark
 
-package object spark {
+package object sql {
 
   type Name = String
 

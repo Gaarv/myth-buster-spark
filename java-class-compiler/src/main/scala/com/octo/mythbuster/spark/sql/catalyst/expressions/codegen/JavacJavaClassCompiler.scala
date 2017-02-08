@@ -1,4 +1,4 @@
-package com.octo.mythbuster.spark.codegen
+package com.octo.mythbuster.spark.sql.catalyst.expressions.codegen
 
 import java.io.File._
 import java.net.URLClassLoader

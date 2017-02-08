@@ -1,16 +1,16 @@
-package com.octo.mythbuster.spark.sql.parser
+package com.octo.mythbuster.spark.sql.catalyst.parser
 
-import com.octo.mythbuster.spark.{ Row, TableName, ColumnName }
-import com.octo.mythbuster.spark.expression
+import com.octo.mythbuster.spark.sql.{ Row, TableName, ColumnName }
+import com.octo.mythbuster.spark.sql.catalyst.expressions
 
 /**
   * https://github.com/stephentu/scala-sql-parser/blob/master/src/main/scala/ast.scala
   */
 sealed trait AST
 
-trait Predicate extends expression.Predicate with AST
+trait Predicate extends expressions.Predicate with AST
 
-trait Expression extends expression.Expression with AST
+trait Expression extends expressions.Expression with AST
 
 case class TableColumn(tableName: TableName, columnName: ColumnName) extends Expression {
 

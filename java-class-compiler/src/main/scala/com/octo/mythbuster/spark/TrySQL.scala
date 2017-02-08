@@ -1,11 +1,12 @@
 package com.octo.mythbuster.spark
 
-import com.octo.mythbuster.spark.plan.logical.LogicalPlan
-import com.octo.mythbuster.spark.plan.physical.PhysicalPlan
-import com.octo.mythbuster.spark.sql.lexer.Lexer
-import com.octo.mythbuster.spark.sql.parser.Parser
+import com.octo.mythbuster.spark.sql.catalyst.plans.logical.LogicalPlan
+import com.octo.mythbuster.spark.sql.catalyst.plans.physical.PhysicalPlan
+import com.octo.mythbuster.spark.sql.catalyst.lexer.Lexer
+import com.octo.mythbuster.spark.sql.catalyst.parser.Parser
+import com.octo.mythbuster.spark.sql._
 
-object Example {
+object TrySQL {
 
   case class Car(id: Int, name: String, companyID: Int)
 
@@ -36,6 +37,7 @@ object Example {
     implicit val iterablesByTableName: Map[TableName, Iterable[Row]] = companyTable(companies) ++ carTable(cars)
 
     val sql = "SELECT car.name FROM company, car  WHERE car.company_id = company.id"
+
     val tokens = Lexer(sql)
     println(tokens)
 

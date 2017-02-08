@@ -1,4 +1,4 @@
-package com.octo.mythbuster.spark.sql.lexer
+package com.octo.mythbuster.spark.sql.catalyst.lexer
 
 import scala.util.parsing.input.Positional
 

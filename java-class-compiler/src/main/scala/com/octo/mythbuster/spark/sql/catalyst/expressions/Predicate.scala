@@ -1,4 +1,4 @@
-package com.octo.mythbuster.spark.expression
+package com.octo.mythbuster.spark.sql.catalyst.expressions
 
 trait Predicate extends Expression {
 

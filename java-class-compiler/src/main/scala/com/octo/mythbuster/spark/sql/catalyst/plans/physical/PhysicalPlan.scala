@@ -1,9 +1,9 @@
-package com.octo.mythbuster.spark.plan.physical
+package com.octo.mythbuster.spark.sql.catalyst.plans.physical
 
-import com.octo.mythbuster.spark.plan.logical
-import com.octo.mythbuster.spark.plan.logical.LogicalPlan
-import com.octo.mythbuster.spark.{ Row, TableName }
-import com.octo.mythbuster.spark.expression.Predicate
+import com.octo.mythbuster.spark.sql.catalyst.plans.logical
+import com.octo.mythbuster.spark.sql.catalyst.plans.logical.LogicalPlan
+import com.octo.mythbuster.spark.sql.{ Row, TableName }
+import com.octo.mythbuster.spark.sql.catalyst.expressions.Predicate
 
 sealed trait PhysicalPlan {
 

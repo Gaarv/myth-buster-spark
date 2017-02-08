@@ -1,7 +1,7 @@
-package com.octo.mythbuster.spark.plan.logical
+package com.octo.mythbuster.spark.sql.catalyst.plans.logical
 
-import com.octo.mythbuster.spark.expression.Predicate
-import com.octo.mythbuster.spark.sql.parser
+import com.octo.mythbuster.spark.sql.catalyst.expressions.Predicate
+import com.octo.mythbuster.spark.sql.catalyst.parser
 
 sealed trait LogicalPlan
 

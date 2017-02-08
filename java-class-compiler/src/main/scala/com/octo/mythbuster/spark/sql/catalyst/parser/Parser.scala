@@ -1,6 +1,6 @@
-package com.octo.mythbuster.spark.sql.parser
+package com.octo.mythbuster.spark.sql.catalyst.parser
 
-import com.octo.mythbuster.spark.sql.lexer
+import com.octo.mythbuster.spark.sql.catalyst.lexer
 
 import scala.util.parsing.combinator.Parsers
 import scala.util.parsing.input.{ NoPosition, Position, Reader }

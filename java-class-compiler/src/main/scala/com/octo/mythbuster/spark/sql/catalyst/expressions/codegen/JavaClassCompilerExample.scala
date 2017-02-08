@@ -1,7 +1,7 @@
-package com.octo.mythbuster.spark.codegen
+package com.octo.mythbuster.spark.sql.catalyst.expressions.codegen
 
-import com.octo.mythbuster.spark.codegen.Implicits._
-import com.octo.mythbuster.spark.codegen.JavaClassCompiler.global
+import com.octo.mythbuster.spark.sql.catalyst.expressions.codegen.Implicits._
+import com.octo.mythbuster.spark.sql.catalyst.expressions.codegen.JavaClassCompiler.global
 import com.octo.nad.Talker
 
 /**
