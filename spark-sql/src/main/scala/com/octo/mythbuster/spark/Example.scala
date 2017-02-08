@@ -6,7 +6,7 @@ import com.octo.mythbuster.spark.sql.catalyst.lexer.Lexer
 import com.octo.mythbuster.spark.sql.catalyst.parser.Parser
 import com.octo.mythbuster.spark.sql._
 
-object TrySQL {
+object Example {
 
   case class Car(id: Int, name: String, companyID: Int)
 
