@@ -48,7 +48,7 @@ object Example {
     println(logicalPlan)
 
     val physicalPlan = PhysicalPlan(logicalPlan)
-    println(physicalPlan)
+    println(physicalPlan.explain())
 
     val rows = physicalPlan.execute()
     rows.foreach(println)
