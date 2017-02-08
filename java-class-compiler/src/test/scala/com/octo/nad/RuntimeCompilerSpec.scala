@@ -1,8 +1,8 @@
 package com.octo.nad
 
 import org.scalameter.api._
-import Implicits._
-import JavaClassCompiler.global
+import com.octo.mythbuster.spark.codegen.Implicits._
+import com.octo.mythbuster.spark.codegen.JavaClassCompiler.global
 
 /**
   * Created by adrien on 25/11/2016.

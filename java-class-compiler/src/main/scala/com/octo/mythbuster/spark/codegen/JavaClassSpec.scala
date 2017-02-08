@@ -1,4 +1,4 @@
-package com.octo.nad
+package com.octo.mythbuster.spark.codegen
 
 import java.io.File.pathSeparator
 import java.io.PrintWriter

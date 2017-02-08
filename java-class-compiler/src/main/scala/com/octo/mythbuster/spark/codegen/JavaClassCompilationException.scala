@@ -1,4 +1,4 @@
-package com.octo.nad
+package com.octo.mythbuster.spark.codegen
 
 /**
   * Created by adrien on 28/11/2016.

@@ -1,7 +1,8 @@
-package com.octo.nad
+package com.octo.mythbuster.spark.codegen
 
-import Implicits._
-import JavaClassCompiler.global
+import com.octo.mythbuster.spark.codegen.Implicits._
+import com.octo.mythbuster.spark.codegen.JavaClassCompiler.global
+import com.octo.nad.Talker
 
 /**
   * Created by adrien on 24/11/2016.

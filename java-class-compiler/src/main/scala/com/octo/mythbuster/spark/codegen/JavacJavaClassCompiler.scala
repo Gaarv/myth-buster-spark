@@ -1,10 +1,10 @@
-package com.octo.nad
+package com.octo.mythbuster.spark.codegen
 
 import java.io.File._
 import java.net.URLClassLoader
 import java.nio.file.{Files, Path, Paths}
 
-import sys.process._
+import scala.sys.process._
 import scala.util.{Failure, Success, Try}
 
 object JavacJavaClassCompiler extends JavaClassCompiler {

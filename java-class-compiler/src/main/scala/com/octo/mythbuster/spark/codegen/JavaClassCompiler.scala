@@ -1,4 +1,4 @@
-package com.octo.nad
+package com.octo.mythbuster.spark.codegen
 
 import scala.util.Try
 

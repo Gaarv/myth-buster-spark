@@ -1,7 +1,9 @@
-package com.octo.nad
+package com.octo.mythbuster.spark.codegen
 
-import scala.util.{ Success, Failure }
+import com.octo.nad.{Talker, TalkerException}
+
 import scala.language.implicitConversions
+import scala.util.{Failure, Success}
 
 object Implicits {
 
