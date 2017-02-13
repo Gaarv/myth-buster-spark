@@ -1,74 +1,106 @@
 package com.octo.mythbuster.spark.sql.catalyst.plans.physical
 
+import com.octo.mythbuster.spark.sql.catalyst.expressions.codegen.{JavaClassSpec, JavacJavaClassCompiler, JavaClassCompiler}
 import com.octo.mythbuster.spark.sql.catalyst.plans.logical
 import com.octo.mythbuster.spark.sql.catalyst.plans.logical.LogicalPlan
 import com.octo.mythbuster.spark.sql.{ Row, TableName }
 import com.octo.mythbuster.spark.sql.catalyst.expressions.Predicate
 
+import java.util.{ Iterator => JavaIterator, Map => JavaMap }
+import scala.collection.JavaConverters._
+
 sealed trait PhysicalPlan {
 
   def explain(indentCount: Int = 0): String
 
-  def execute(): Iterator[Row]
-
-}
-
-object delegateTo {
-
-  def apply(iteratorFunc: => Iterator[Row])(explainFunc: (Int) => String): PhysicalPlan = {
-    new PhysicalPlan {
-
-      def explain(indentCount: Int = 0): String = explainFunc(indentCount)
-
-      def execute() = {
-        val iterator = iteratorFunc
-
-        new Iterator[Row] {
-
-          override def hasNext = iterator.hasNext
-
-          override def next() = iterator.next()
-
-        }
-      }
-
-    }
+  def execute(withCodeGeneration: Boolean): Iterator[Row] = {
+    executeVolcano()
   }
 
+  def executeVolcano(): Iterator[Row]
+
 }
 
-object IterableScan {
+trait CodeGen extends PhysicalPlan {
+  def generateCode(parentCode : String): String
 
-  def apply(iterable: Iterable[Row]): PhysicalPlan = delegateTo({ iterable.iterator }) { indentCount =>
+  override def execute(withCodeGeneration: Boolean): Iterator[Row] = {
+    if(withCodeGeneration) executeGenerated()
+    else executeVolcano()
+  }
+
+  def executeGenerated(): Iterator[Row] = {
+    val generatedClassName = "GeneratedIterator"
+    val code =
+      s"""
+        |import java.util.Iterator
+        |
+        |public class ${generatedClassName} implements Iterator<Map<String, Object>> {
+        |
+        |   public
+        |
+        |}
+      """.stripMargin
+
+    JavacJavaClassCompiler.compile(JavaClassSpec(generatedClassName, code)).get.newInstance().asInstanceOf[JavaIterator[JavaMap[String, Object]]].asScala.map(_.asScala)
+  }
+}
+
+case class IterableScan(iterable: Iterable[Row]) extends CodeGen {
+
+  override def generateCode(parentCode: String): String = {
+    s"""
+      while(...) $parentCode
+     """
+  }
+
+  override def explain(indentCount: Int): String = {
     val indent = "\t" * indentCount
     s"${indent}IterableScan(iterable=[\n${"\t" * (indentCount + 1)}${iterable.map({ row => s"(${row.values.mkString(", ")})" }).mkString(", ")}\n${indent}])"
   }
 
+  override def execute(): Iterator[Row] = ???
 }
 
-object Filter {
+case class Filter(child: PhysicalPlan, predicate: Predicate) extends CodeGen {
+  override def generateCode(parentCode: String): String = {
+    child match {
+      case t : CodeGen  => val code = s"""
+        if($predicate) {
+          $parentCode
+        }
+        """
+        child.generateCodeNext(code)
+      case _ => ""
+    }
 
-  def apply(child: PhysicalPlan, predicate: Predicate): PhysicalPlan = delegateTo({ child.execute().filter(predicate.evaluate) }) { indentCount =>
+  }
+
+  override def explain(indentCount: Int): String = {
     val indent = "\t" * indentCount
     s"${indent}Filter(predicate=${predicate}), \n${child.explain(indentCount + 1)}\n${indent})"
   }
-
 }
 
-object CartesianProduct {
+case class CartesianProduct(leftChild: PhysicalPlan, rightChild: PhysicalPlan) extends CodeGen {
 
-  def apply(leftChild: PhysicalPlan, rightChild: PhysicalPlan): PhysicalPlan = delegateTo({
+  override def generateCode(parent : PhysicalPlan) : String = {
+    ""
+  }
+
+  override def explain(indentCount: Int = 0): String = {
+    val indent = "\t" * indentCount
+    s"${indent}CartesianProduct(\n${leftChild.explain(indentCount + 1)},\n${rightChild.explain(indentCount + 1)}\n${indent})"
+  }
+
+  override def execute(): Iterator[Row] = {
     val leftChildIterator = leftChild.execute()
     val rightChildSeq = rightChild.execute().toSeq
     for {
       leftRow <- leftChildIterator
       rightRow <- rightChildSeq
     } yield leftRow ++ rightRow
-  }) { indentCount =>
-    val indent = "\t" * indentCount
-    s"${indent}CartesianProduct(\n${leftChild.explain(indentCount + 1)},\n${rightChild.explain(indentCount + 1)}\n${indent})"
   }
-
 }
 
 object PhysicalPlan {
