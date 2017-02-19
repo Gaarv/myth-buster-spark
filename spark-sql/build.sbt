@@ -18,4 +18,4 @@ fork := true
 
 parallelExecution in Test := false
 
-mainClass in (Compile, run) := Some("com.octo.nad.JavaClassCompilerExample")
+//mainClass in (Compile, run) := Some("com.octo.nad.JavaClassCompilerExample")

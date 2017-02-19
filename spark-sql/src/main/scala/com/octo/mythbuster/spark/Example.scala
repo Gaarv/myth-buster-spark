@@ -3,7 +3,7 @@ package com.octo.mythbuster.spark
 import com.octo.mythbuster.spark.sql.catalyst.plans.logical.LogicalPlan
 import com.octo.mythbuster.spark.sql.catalyst.plans.physical.PhysicalPlan
 import com.octo.mythbuster.spark.sql.catalyst.lexer.Lexer
-import com.octo.mythbuster.spark.sql.catalyst.parser.Parser
+import com.octo.mythbuster.spark.sql.catalyst.parser.{TableColumn, Parser}
 import com.octo.mythbuster.spark.sql._
 
 object Example {
@@ -39,18 +39,18 @@ object Example {
     val sql = "SELECT car.name FROM company, car  WHERE car.company_id = company.id"
 
     val tokens = Lexer(sql)
-    println(tokens)
+    println("TOKENS : " + tokens)
 
     val ast = Parser(tokens)
-    println(ast)
+    println("AST : " + ast)
 
     val logicalPlan = LogicalPlan(ast)
-    println(logicalPlan)
+    println("LOGICAL : " + logicalPlan)
 
     val physicalPlan = PhysicalPlan(logicalPlan)
-    println(physicalPlan.explain())
+    println("PHYSICAL : " + physicalPlan.explain())
 
-    val rows = physicalPlan.execute()
+    val rows = physicalPlan.execute(withCodeGeneration = true)
     rows.foreach(println)
   }
 

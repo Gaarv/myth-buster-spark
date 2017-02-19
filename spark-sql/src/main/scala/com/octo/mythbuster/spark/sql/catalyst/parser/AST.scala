@@ -18,6 +18,8 @@ case class TableColumn(tableName: TableName, columnName: ColumnName) extends Exp
 
   override def evaluate(row: Row): Type = row((tableName, columnName))
 
+  override def toString() = tableName + "." + columnName
+
 }
 
 trait BinaryOperation extends Predicate {
@@ -32,10 +34,12 @@ case class Equal(leftChild: Expression, rightChild: Expression) extends BinaryOp
 
   override def evaluate(row: Row) = leftChild.evaluate(row) == rightChild.evaluate(row)
 
+  override def toString() = leftChild + " == " + rightChild
+
 }
 
 trait Relation extends AST
 
 case class Table(tableName: String) extends Relation
 
-case class Select(projections: Seq[Expression], filter: Predicate, relations: Seq[Relation]) extends AST
+case class Select(projections: Seq[TableColumn], filter: Predicate, relations: Seq[Relation]) extends AST
