@@ -16,7 +16,7 @@ object Lexer extends RegexParsers {
 
   def equal: Parser[Equal] = positioned { "=" ^^ { _ => Equal() } }
 
-  def identifier: Parser[Identifier] = positioned { "[a-z][a-z0-9_]*".r ^^  { value => Identifier(value) } }
+  def identifier: Parser[Identifier] = positioned { "[A-Za-z0-9_][A-Za-z0-9_]*".r ^^  { value => Identifier(value) } }
 
   def comma: Parser[Comma] = positioned { "," ^^ { _ => Comma() } }
 

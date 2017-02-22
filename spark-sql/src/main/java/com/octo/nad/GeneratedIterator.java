@@ -16,6 +16,8 @@ import java.util.Map;
 public abstract class GeneratedIterator {
     protected LinkedList<Map<String, Object>> currentRows = new LinkedList<>();
 
+    protected Iterator<Map<String, Object>> input;
+
     public boolean hasNext() throws IOException {
         if (currentRows.isEmpty()) {
             processNext();
@@ -30,7 +32,9 @@ public abstract class GeneratedIterator {
     /**
      * Initializes from array of iterators of InternalRow.
      */
-   // public abstract void init(int index, Iterator<Map<TableColumn, Object>>[] iters);
+    public void init(Iterator<Map<String, Object>> iter) {
+        this.input = iter;
+    }
 
     /**
      * Append a row to currentRows.

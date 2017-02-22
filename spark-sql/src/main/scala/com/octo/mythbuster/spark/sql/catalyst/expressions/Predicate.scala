@@ -4,4 +4,6 @@ trait Predicate extends Expression {
 
   override type Type = Boolean
 
+  def toString(inputName : String) : String
+
 }

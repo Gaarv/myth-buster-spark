@@ -36,7 +36,7 @@ object Example {
 
     implicit val iterablesByTableName: Map[TableName, Iterable[Row]] = companyTable(companies) ++ carTable(cars)
 
-    val sql = "SELECT car.name FROM company, car  WHERE car.company_id = company.id"
+    val sql = "SELECT car.company_id FROM car WHERE car.name = Clio"
 
     val tokens = Lexer(sql)
     println("TOKENS : " + tokens)

@@ -27,7 +27,13 @@ sealed trait PhysicalPlan {
 }
 
 trait CodeGen extends PhysicalPlan {
-  def generateCode(parentCode : String): String
+  def formatSource(source : util.Iterator[Row]) : util.Iterator[util.Map[String, Object]] = {
+    source.asScala.map(_.map{ case ((tableName, columnName), value : AnyRef) =>
+      tableName + "." + columnName -> value
+    }.asJava).asJava
+  }
+
+  def generateCode(parentCode : String): (String, Iterable[Row])
 
   override def execute(withCodeGeneration: Boolean): Iterator[Row] = {
     if(withCodeGeneration) executeGenerated()
@@ -38,6 +44,7 @@ trait CodeGen extends PhysicalPlan {
     val packageName = "com.octo.nad"
     val generatedClassSimpleName = "GeneratedObject"
     val generatedClassName = packageName + "." + generatedClassSimpleName
+    val (generatedCode, source) = generateCode("")
     val code =
       s"""
         |package com.octo.nad;
@@ -55,7 +62,7 @@ trait CodeGen extends PhysicalPlan {
         |
         |   @Override
         |   protected void processNext() throws IOException {
-        |     ${generateCode("")}
+        |     $generatedCode
         |   }
         |
         |}
@@ -64,19 +71,24 @@ trait CodeGen extends PhysicalPlan {
     println("### CODE : \n" + code )
 
     val generatedIterator : GeneratedIterator = JavacJavaClassCompiler.compile(JavaClassSpec(generatedClassName, code)).get.newInstance().asInstanceOf[GeneratedIterator]
-    val next = generatedIterator.next()
-    next.asInstanceOf[scala.collection.Iterator[Row]]
+
+    val formattedSource = formatSource(source.toIterator.asJava).asScala
+    generatedIterator.init(formattedSource)
+    new ScalaGeneratedIterator(generatedIterator)
   }
 }
 
 case class IterableScan(iterable: Iterable[Row]) extends CodeGen {
 
-  override def generateCode(parentCode: String): String = {
-    s"""
-      while(currentRows.hasNext()) {
+  override def generateCode(parentCode: String): (String, Iterable[Row]) = {
+    val code = s"""
+      while(input.hasNext()) {
+        currentRows.add(input.next());
         $parentCode
+        if(shouldStop()) return;
       }
      """
+    (code, iterable)
   }
 
   override def explain(indentCount: Int): String = {
@@ -95,17 +107,19 @@ case class Filter(child: PhysicalPlan, predicate: Predicate) extends CodeGen {
     child.executeVolcano().filter(predicate.evaluate)
   }
 
-  override def generateCode(parentCode: String): String = {
+  override def generateCode(parentCode: String): (String, Iterable[Row]) = {
     val code : String =
       s"""
-         |Map<String, Object> currentRow = currentRows.getFirst();
-         if(${predicate.toString}) {
-         |   $parentCode
+         |Map<String, Object> firstRow = currentRows.getFirst();
+         if(!(${predicate.toString("firstRow")})) {
+         |   currentRows.pop();
+         }
+         else {
+         $parentCode
          }
        """.stripMargin
     child match {
       case t : CodeGen  => t.generateCode(code)
-      case _ => code
     }
   }
 
@@ -144,7 +158,7 @@ case class Projection(child : PhysicalPlan, tableColumns : Seq[TableColumn]) ext
     })
   }
 
-  override def generateCode(parentCode: String): String = {
+  override def generateCode(parentCode: String): (String, Iterable[Row]) = {
     val code = "String tableColumns[] = {" + tableColumns.mkString("\"", "\",\"", "\"") + "};" +
       """
       |Map<String, Object> currentRow = currentRows.getFirst();
@@ -157,7 +171,6 @@ case class Projection(child : PhysicalPlan, tableColumns : Seq[TableColumn]) ext
     """.stripMargin + parentCode
     child match {
       case t : CodeGen => t.generateCode(code)
-      case _ => code
     }
   }
 }

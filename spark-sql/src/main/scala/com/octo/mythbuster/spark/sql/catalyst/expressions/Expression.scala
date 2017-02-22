@@ -8,4 +8,6 @@ trait Expression {
 
   def evaluate(row: Row): Type
 
+  def toString(inputName : String) : String
+
 }

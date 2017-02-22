@@ -25,6 +25,8 @@ object Parser extends Parsers {
 
   def table = { identifier } ^^ { case lexer.Identifier(tableName) => Table(tableName) }
 
+  def value = { identifier } ^^ { case lexer.Identifier(value) => Value(value) }
+
   def relations = { table ~ rep(lexer.Comma() ~ table ) } ^^ { case firstTableRelation ~ otherTableRelations => firstTableRelation :: otherTableRelations.map({ case lexer.Comma() ~ tableRelation => tableRelation }) }
 
   def tableColumn = { identifier ~ lexer.Dot() ~ identifier } ^^ { case lexer.Identifier(tableName) ~ _ ~ lexer.Identifier(columnName) => TableColumn(tableName, columnName) }
@@ -33,7 +35,7 @@ object Parser extends Parsers {
 
   def identifier = { accept("identifier", { case identifier @ lexer.Identifier(_) => identifier }) }
 
-  def equal = { tableColumn ~ lexer.Equal() ~ tableColumn } ^^ { case leftColumnExpression ~ _ ~ rightColumnExpression => Equal(leftColumnExpression, rightColumnExpression) }
+  def equal = { tableColumn ~ lexer.Equal() ~ (tableColumn | value) } ^^ { case leftColumnExpression ~ _ ~ rightColumnExpression  => Equal(leftColumnExpression, rightColumnExpression)}
 
   def filter = equal
 

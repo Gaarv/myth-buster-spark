@@ -20,7 +20,20 @@ case class TableColumn(tableName: TableName, columnName: ColumnName) extends Exp
 
   override def toString() = tableName + "." + columnName
 
+  override def toString(inputName : String) : String = s"$inputName.get(" + "\"" + s"$tableName.$columnName" + "\")"
+
 }
+
+case class Value(value: String) extends Expression {
+  override type Type = Any
+
+  override def evaluate(row: Row): Type = value
+
+  override def toString() = "\"" + value + "\""
+
+  override def toString(inputName : String) : String = if(value.forall(_.isDigit)) value else  "\"" + value + "\""
+}
+
 
 trait BinaryOperation extends Predicate {
 
@@ -34,7 +47,7 @@ case class Equal(leftChild: Expression, rightChild: Expression) extends BinaryOp
 
   override def evaluate(row: Row) = leftChild.evaluate(row) == rightChild.evaluate(row)
 
-  override def toString() = leftChild + " == " + rightChild
+  override def toString(inputName : String) = leftChild.toString(inputName) + ".equals(" + rightChild.toString(inputName) + ")"
 
 }
 
