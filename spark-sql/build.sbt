@@ -9,6 +9,8 @@ libraryDependencies += "com.google.guava" % "guava" % "20.0"
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 libraryDependencies += "com.storm-enroute" %% "scalameter" % "0.8.2" % "test"
 libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.5"
+libraryDependencies += "org.scala-lang" % "scala-reflect" % "2.12.1"
+
 
 testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework")
 
