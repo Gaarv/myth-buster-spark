@@ -22,61 +22,9 @@ trait Stage {
 
 }
 
-/*trait CodeGen extends PhysicalPlan {
-  def formatSource(source : util.Iterator[Row]) : util.Iterator[util.Map[String, Object]] = {
-    source.asScala.map(_.map{ case ((tableName, columnName), value : AnyRef) =>
-      tableName + "." + columnName -> value
-    }.asJava).asJava
-  }
-
-  def generateCode(parentCode : String): (String, Iterable[Row])
-
-  override def execute(withCodeGeneration: Boolean): Iterator[Row] = {
-    if(withCodeGeneration) executeGenerated()
-    else executeVolcano()
-  }
-
-  def executeGenerated(): Iterator[Row] = {
-    val packageName = "com.octo.nad"
-    val generatedClassSimpleName = "GeneratedObject"
-    val generatedClassName = packageName + "." + generatedClassSimpleName
-    val (generatedCode, source) = generateCode("")
-    val code =
-      s"""
-        |package com.octo.nad;
-        |
-        |import java.util.Iterator;
-        |import com.octo.nad.GeneratedIterator;
-        |import java.io.IOException;
-        |import java.util.Map;
-        |import com.octo.mythbuster.spark.sql.catalyst.parser.TableColumn;
-        |import java.util.LinkedList;
-        |import java.util.HashMap;
-        |
-        |
-        |public class $generatedClassSimpleName extends GeneratedIterator {
-        |
-        |   @Override
-        |   protected void processNext() throws IOException {
-        |     $generatedCode
-        |   }
-        |
-        |}
-      """.stripMargin
-
-    println("### CODE : \n" + code )
-
-    val generatedIterator : GeneratedIterator = JavacJavaClassCompiler.compile(JavaClassSpec(generatedClassName, code)).get.newInstance().asInstanceOf[GeneratedIterator]
-
-    val formattedSource = formatSource(source.toIterator.asJava).asScala
-    generatedIterator.init(formattedSource)
-    new ScalaGeneratedIterator(generatedIterator)
-  }
-}*/
-
 case class TableScan(tableName: TableName, iterable: Iterable[Row]) extends Stage {
 
-  override def execute(): Iterator[InternalRow] = iterable.iterator.map(_.toPhysicalRow(tableName))
+  override def execute(): Iterator[InternalRow] = iterable.iterator.map(_.toInternalRow(tableName))
 }
 
 case class Filter(child: Stage, expression: e.Expression) extends Stage {
