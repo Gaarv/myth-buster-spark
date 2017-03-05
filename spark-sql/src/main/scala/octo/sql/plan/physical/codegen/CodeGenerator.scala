@@ -1,6 +1,6 @@
 package octo.sql.plan.physical.codegen
 
-trait SupportsCodeGeneration {
+trait CodeGenerator {
 
   type Code = String
 

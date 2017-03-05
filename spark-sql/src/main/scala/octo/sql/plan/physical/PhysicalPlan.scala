@@ -4,7 +4,7 @@ import octo.sql.{Row, TableName}
 import octo.sql.{expression => e}
 import octo.sql._
 import octo.GeneratedIterator
-import octo.sql.plan.physical.codegen.SupportsCodeGeneration
+import octo.sql.plan.physical.codegen.CodeGenerator
 
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
@@ -26,7 +26,7 @@ case class TableScan(tableName: TableName, iterable: Iterable[Row]) extends Stag
   override def execute(): Iterator[InternalRow] = iterable.iterator.map(_.toInternalRow(tableName))
 }
 
-case class Filter(child: Stage, expression: e.Expression) extends Stage with SupportsCodeGeneration {
+case class Filter(child: Stage, expression: e.Expression) extends Stage with CodeGenerator {
 
   override def execute() : Iterator[InternalRow] = {
     expression.toPredicate match {
@@ -56,7 +56,7 @@ case class CartesianProduct(leftChild: Stage, rightChild: Stage) extends Stage {
   } yield leftRow ++ rightRow
 }
 
-case class Projection(child: Stage, expressions : Seq[e.Expression]) {
+case class Projection(child: Stage, expressions : Seq[e.Expression]) extends CodeGenerator {
 
   def execute(): Iterator[Row] = child.execute().map({ physicalRow: InternalRow =>
     Map(expressions.zipWithIndex.map({ case (expression: e.Expression, index: Int) =>
@@ -64,5 +64,9 @@ case class Projection(child: Stage, expressions : Seq[e.Expression]) {
       s"column_${index}" -> value
     }): _*)
   })
+
+  override def generateCode(parentCode: String): String = {
+
+  }
 
 }
