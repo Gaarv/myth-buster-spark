@@ -1,4 +1,4 @@
-package octo.sql.codegen;
+package octo.sql.plan.physical.codegen;
 
 import java.util.Objects;
 

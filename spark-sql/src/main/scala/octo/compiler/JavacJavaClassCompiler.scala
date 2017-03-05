@@ -1,4 +1,4 @@
-package octo.sql.compiler
+package octo.compiler
 
 import java.io.File._
 import java.net.URLClassLoader

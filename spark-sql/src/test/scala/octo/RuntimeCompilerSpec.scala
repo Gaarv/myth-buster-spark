@@ -1,8 +1,8 @@
 package octo
 
 import org.scalameter.api._
-import octo.sql.compiler.Implicits._
-import octo.sql.compiler.JavaClassCompiler.global
+import octo.compiler.Implicits._
+import octo.compiler.JavaClassCompiler.global
 
 /**
   * Created by adrien on 25/11/2016.

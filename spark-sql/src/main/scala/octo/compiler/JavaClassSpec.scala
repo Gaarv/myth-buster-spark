@@ -1,4 +1,4 @@
-package octo.sql.compiler
+package octo.compiler
 
 import java.io.File.pathSeparator
 import java.io.PrintWriter
@@ -23,5 +23,7 @@ case class JavaClassSpec[T](name: String, sourceCode: String) {
       sourceFilePath
     }
   }
+
+  def compile()(implicit javaClassCompiler: JavaClassCompiler) = javaClassCompiler.compile(this)
 
 }

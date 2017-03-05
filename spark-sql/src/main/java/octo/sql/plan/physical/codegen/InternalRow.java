@@ -1,23 +1,23 @@
-package octo.sql.codegen;
+package octo.sql.plan.physical.codegen;
 
 import com.google.common.collect.Maps;
 
 import java.util.Map;
 
-public class PhysicalRow {
+public class InternalRow {
 
     private Map<TableNameAndColumnName, Object> valueByTableNameAndColumName = Maps.newHashMap();
 
-    private PhysicalRow(Map<TableNameAndColumnName, Object> valueByTableNameAndColumName) {
+    private InternalRow(Map<TableNameAndColumnName, Object> valueByTableNameAndColumName) {
         super();
         this.valueByTableNameAndColumName = valueByTableNameAndColumName;
     }
 
-    public static PhysicalRow wrapForJava(Map<TableNameAndColumnName, Object> valueByTableNameAndColumName) {
-        return new PhysicalRow(valueByTableNameAndColumName);
+    public static InternalRow wrap(Map<TableNameAndColumnName, Object> valueByTableNameAndColumName) {
+        return new InternalRow(valueByTableNameAndColumName);
     }
 
-    public Map<TableNameAndColumnName, Object> unwrapForScala() {
+    public Map<TableNameAndColumnName, Object> unwrap() {
         return valueByTableNameAndColumName;
     }
 

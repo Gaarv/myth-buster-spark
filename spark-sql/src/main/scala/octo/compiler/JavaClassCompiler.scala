@@ -1,4 +1,4 @@
-package octo.sql.compiler
+package octo.compiler
 
 import scala.util.Try
 
