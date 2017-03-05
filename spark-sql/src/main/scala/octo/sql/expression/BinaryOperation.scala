@@ -28,4 +28,12 @@ trait BinaryOperation extends Expression {
     p <- super.toPredicate
   } yield p
 
+  val javaOperator: String
+
+  override def generateJavaCode(javaVariableName: String): String =
+    s"""
+       |(${leftChild.generateJavaCode(javaVariableName)} ${javaOperator} ${rightChild.generateJavaCode(javaVariableName)})
+    """.stripMargin
+
+
 }

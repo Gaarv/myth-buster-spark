@@ -12,4 +12,9 @@ case class TableColumn(tableName: TableName, columnName: ColumnName) extends Exp
 
   override def evaluate(row: InternalRow): Type = row((tableName, columnName))
 
+  override def generateJavaCode(javaVariableName: String): String =
+    s"""
+      |${javaVariableName}.getValue(TableNameAndColumnName.of("${tableName}", "${columnName}"))
+    """.stripMargin
+
 }
