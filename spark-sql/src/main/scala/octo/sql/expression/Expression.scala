@@ -15,6 +15,6 @@ trait Expression extends AST {
     Failure(new Exception(s"The ${this} expression is not a predicate"))
   }
 
-  def generateJavaCode(javaVariableName: String): String
+  def generateCode(javaVariableName: String): String
 
 }

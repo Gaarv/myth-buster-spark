@@ -1,11 +1,10 @@
 package octo.sql.plan.physical
 
-import octo.sql.{ Row, TableName }
-import octo.sql.{ expression => e }
+import octo.sql.{Row, TableName}
+import octo.sql.{expression => e}
 import octo.sql._
-
-
 import octo.GeneratedIterator
+import octo.sql.plan.physical.codegen.SupportsCodeGeneration
 
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
@@ -27,7 +26,7 @@ case class TableScan(tableName: TableName, iterable: Iterable[Row]) extends Stag
   override def execute(): Iterator[InternalRow] = iterable.iterator.map(_.toInternalRow(tableName))
 }
 
-case class Filter(child: Stage, expression: e.Expression) extends Stage {
+case class Filter(child: Stage, expression: e.Expression) extends Stage with SupportsCodeGeneration {
 
   override def execute() : Iterator[InternalRow] = {
     expression.toPredicate match {
@@ -35,6 +34,17 @@ case class Filter(child: Stage, expression: e.Expression) extends Stage {
       case Failure(e) => throw e
     }
   }
+
+  override def generateCode(parentCode: String): String =
+    """
+      |InternalRow firstRow = getCurrentRows().getFirst();
+      |if(!(${expression.generateCode("firstRow")})) {
+      |  getCurrentRows().pop();
+      |}
+      |else {
+      |  $parentCode
+      |}
+    """.stripMargin
 
 }
 

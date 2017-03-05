@@ -14,7 +14,7 @@ case class Text(value: String) extends Literal {
 
   override type Type = String
 
-  def generateJavaCode(javaVariableName: String): String =
+  def generateCode(javaVariableName: String): String =
     s"""
       |"${value}"
     """.stripMargin
@@ -25,7 +25,7 @@ case class Number(value: Float) extends Literal {
 
   override type Type = Float
 
-  def generateJavaCode(javaVariableName: String): String =
+  def generateCode(javaVariableName: String): String =
     s"""
        |${value}f
     """.stripMargin

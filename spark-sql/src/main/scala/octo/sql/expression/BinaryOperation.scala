@@ -30,9 +30,9 @@ trait BinaryOperation extends Expression {
 
   val javaOperator: String
 
-  override def generateJavaCode(javaVariableName: String): String =
+  override def generateCode(javaVariableName: String): String =
     s"""
-       |(${leftChild.generateJavaCode(javaVariableName)} ${javaOperator} ${rightChild.generateJavaCode(javaVariableName)})
+       |(${leftChild.generateCode(javaVariableName)} ${javaOperator} ${rightChild.generateCode(javaVariableName)})
     """.stripMargin
 
 
