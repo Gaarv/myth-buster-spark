@@ -12,7 +12,7 @@ import octo.sql.plan.physical.{ InternalRow => ScalaInternalRow }
 
 import scala.util.{Failure, Success}
 
-case class CodeGeneratedStage(stage: SupportsCodeGen) extends Stage {
+case class CodeGeneratedStage(childStage: Stage, generatedCode: String) extends Stage {
 
   def execute(): Iterator[p.InternalRow] = {
     val packageName = "octo.sql.physical.codegen"
@@ -40,7 +40,7 @@ case class CodeGeneratedStage(stage: SupportsCodeGen) extends Stage {
         |   @Override
         |   protected void continueProcessing() {
         |     while(shouldContinueProcessing() && addNextChildRowToCurrentRows()) {
-        |        ${stage.generateCode()}
+        |        ${generatedCode}
         |      }
         |   }
         |
@@ -48,7 +48,7 @@ case class CodeGeneratedStage(stage: SupportsCodeGen) extends Stage {
       """.stripMargin
 
       JavaClassSpec(generatedClassName, generatedClassSourceCode).compile() match {
-        case Success(generatedClass) => newInstanceOfGeneratedClass(generatedClass, null)
+        case Success(generatedClass) => newInstanceOfGeneratedClass(generatedClass, childStage.execute())
         case Failure(e) => throw e
       }
   }
