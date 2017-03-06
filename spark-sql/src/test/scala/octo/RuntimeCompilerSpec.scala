@@ -1,6 +1,6 @@
 package octo
 
-import org.scalameter.api._
+/*import org.scalameter.api._
 import octo.compiler.Implicits._
 import octo.compiler.JavaClassCompiler.global
 
@@ -48,4 +48,4 @@ class RuntimeCompilerSpec extends BenchSpec {
 
   }
 
-}
+}*/

@@ -1,7 +1,5 @@
 package octo.sql.lexer
 
-import com.octo.mythbuster.spark.sql.Row
-
 import scala.util.parsing.input.Positional
 
 sealed trait Token extends Positional {

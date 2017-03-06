@@ -24,14 +24,14 @@ object QueryPlanner {
   }
 
   def planQuery(logicalPlan: l.LogicalPlan)(implicit tableRegistry: TableRegistry): Try[PhysicalPlan] = (logicalPlan match {
-    case l.Projection(child, expressions) => Success(p.PhysicalPlan(p.Projection(planStage(child), expressions)))
+    case l.Projection(child, expressions) => Success(p.PhysicalPlan(p.EvaluatedProjection(planStage(child), expressions)))
     case _ => Failure(new IllegalArgumentException(s"Unable to plan query because ${logicalPlan} needs to be a projection"))
-  }).map(optimize)
+  })//.map(optimize)
 
-  protected def optimize(physicalPlan: PhysicalPlan): PhysicalPlan = physicalPlan match {
+  /*protected def optimize(physicalPlan: PhysicalPlan): PhysicalPlan = physicalPlan match {
 
 
-  }
+  }*/
 
 
 }

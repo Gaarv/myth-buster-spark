@@ -3,7 +3,6 @@ package octo.sql.plan.physical
 import octo.sql.{Row, TableName}
 import octo.sql.{expression => e}
 import octo.sql._
-import octo.GeneratedIterator
 import octo.sql.plan.physical.codegen.CodeGenerator
 
 import scala.collection.JavaConverters._
@@ -18,6 +17,12 @@ case class PhysicalPlan(projection: Projection) {
 trait Stage {
 
   def execute(): Iterator[InternalRow]
+
+}
+
+trait Projection {
+
+  def execute(): Iterator[Row]
 
 }
 
@@ -56,7 +61,7 @@ case class CartesianProduct(leftChild: Stage, rightChild: Stage) extends Stage {
   } yield leftRow ++ rightRow
 }
 
-case class Projection(child: Stage, expressions : Seq[e.Expression]) extends CodeGenerator {
+case class EvaluatedProjection(child: Stage, expressions : Seq[e.Expression]) extends Projection with CodeGenerator {
 
   def execute(): Iterator[Row] = child.execute().map({ physicalRow: InternalRow =>
     Map(expressions.zipWithIndex.map({ case (expression: e.Expression, index: Int) =>
@@ -65,8 +70,18 @@ case class Projection(child: Stage, expressions : Seq[e.Expression]) extends Cod
     }): _*)
   })
 
-  override def generateCode(parentCode: String): String = {
-
-  }
+  override def generateCode(parentCode: String): String =
+    s"""
+      |InternalRow internalRowForProjection = currentRows.getFirst();
+      |Object valuesForProjection[] = {
+      |  ${expressions.map(_.generateCode("internalRowForProjection")).mkString(",\n")}
+      |};
+      |Row rowForProjection = Row.empty();
+      |for(int index = 0; index < valuesForProjection.length; index++) {
+      |  rowForProjection.setValue("column_" + index, valuesForProjection[index]);
+      |}
+      |currentRows.pop();
+      |currentRows.add(rowForProjection);
+    """.stripMargin
 
 }

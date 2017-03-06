@@ -31,6 +31,23 @@ object Implicits {
     }
   }
 
+  implicit class JavaRowImplicits(row: JavaRow) {
+
+    def unwrapForScala: ScalaRow = {
+      row.unwrap().asScala.toMap
+    }
+  }
+
+  implicit class ScalaRowImplicits(scalaRow: ScalaRow) {
+
+    def wrapForJava: JavaRow = {
+      JavaRow.wrap(scalaRow.map({ case (columnName, value) =>
+        (columnName, value.asInstanceOf[AnyRef])
+      }).asJava)
+    }
+
+  }
+
   implicit class ScalaInternalRowIteratorImplicits(iterator: ScalaIterator[ScalaInternalRow]) {
 
     def wrapForJava: JavaIterator[JavaInternalRow] = iterator.map(_.wrapForJava).asJava
@@ -40,6 +57,18 @@ object Implicits {
   implicit class JavaInternalRowIteratorImplicits(iterator: JavaIterator[JavaInternalRow]) {
 
     def unwrapForScala: ScalaIterator[ScalaInternalRow] = iterator.asScala.map(_.unwrapForScala)
+
+  }
+
+  implicit class ScalaRowIteratorImplicits(scalaIterator: ScalaIterator[ScalaRow]) {
+
+    def wrapForJava: JavaIterator[JavaRow] = scalaIterator.map(_.wrapForJava).asJava
+
+  }
+
+  implicit class JavaRowIteratorImplicits(javaIterator: JavaIterator[JavaRow]) {
+
+    def unwrapForScala: ScalaIterator[ScalaRow] = javaIterator.asScala.map(_.unwrapForScala)
 
   }
 

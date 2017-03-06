@@ -13,16 +13,24 @@ public class Row {
         this.valueByColumnName = valueByColumnName;
     }
 
-    public static Row wrapForJava(Map<String, Object> valueByColumnName) {
+    public static Row empty() {
+        return wrap(Maps.newHashMap());
+    }
+
+    public static Row wrap(Map<String, Object> valueByColumnName) {
         return new Row(valueByColumnName);
     }
 
-    public Map<String, Object> unwrapForScala() {
+    public Map<String, Object> unwrap() {
         return valueByColumnName;
     }
 
     public Object getValue(String columnName) {
         return valueByColumnName.get(columnName);
+    }
+
+    public void setValue(String columnName, Object value) {
+        this.valueByColumnName.put(columnName, value);
     }
 
 }
