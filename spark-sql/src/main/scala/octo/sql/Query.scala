@@ -15,6 +15,7 @@ object Query {
     ast <- Parser(tokens)
     logicalPlan <- LogicalPlan(ast)
     physicalPlan <- QueryPlanner.planQuery(logicalPlan)
+    _ = println(physicalPlan)
     query <- Success(new Query(physicalPlan, tableRegistry))
   } yield query
 

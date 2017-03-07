@@ -41,7 +41,7 @@ case class Filter(child: Stage, expression: e.Expression) extends Stage with Cod
   }
 
   override def generateCode(parentCode: String): String =
-    """
+    s"""
       |InternalRow firstRow = getCurrentRows().getFirst();
       |if(!(${expression.generateCode("firstRow")})) {
       |  getCurrentRows().pop();
