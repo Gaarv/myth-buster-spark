@@ -1,7 +1,7 @@
 package octo.sql.plan.physical.codegen
 
 import octo.sql.plan.{physical => p}
-import octo.sql.plan.physical.Stage
+import octo.sql.plan.physical.PhysicalPlan
 import octo.sql.plan.physical.codegen.Implicits._
 import octo.compiler.JavaClassCompiler.global
 import octo.compiler.JavaClassSpec
@@ -12,7 +12,7 @@ import octo.sql.plan.physical.{ InternalRow => ScalaInternalRow }
 
 import scala.util.{Failure, Success}
 
-case class CodeGeneratedStage(childStage: Stage, generatedCode: String) extends Stage {
+case class CodeGeneratedStage(childStage: PhysicalPlan, generatedCode: String) extends PhysicalPlan {
 
   def execute(): Iterator[p.InternalRow] = {
     val packageName = "octo.sql.physical.codegen"

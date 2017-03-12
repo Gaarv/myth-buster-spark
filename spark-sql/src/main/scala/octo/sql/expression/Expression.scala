@@ -1,5 +1,6 @@
 package octo.sql.expression
 
+import octo.sql.ColumnName
 import octo.sql.parser.AST
 import octo.sql.plan.physical.InternalRow
 
@@ -16,5 +17,14 @@ trait Expression extends AST {
   }
 
   def generateCode(javaVariableName: String): String
+
+}
+
+object NamedExpression {
+
+  def unapply(e: Expression): Option[ColumnName] = e match {
+    case TableColumn(tableName, columnName) => Some(s"${tableName}.${columnName}")
+    case _ => None
+  }
 
 }

@@ -27,7 +27,7 @@ package object sql {
 
   implicit class RowImplicits(row: Row) {
 
-    def toInternalRow(tableName: TableName): InternalRow = row.map({ case (columnName, value) => ((tableName, columnName), value) })
+    def toInternalRow(tableName: TableName): InternalRow = row.map({ case (columnName, value) => ((Some(tableName), columnName), value) })
 
   }
 

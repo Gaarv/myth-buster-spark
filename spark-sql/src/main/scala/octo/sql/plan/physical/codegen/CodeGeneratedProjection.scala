@@ -1,7 +1,7 @@
 package octo.sql.plan.physical.codegen
 
 import octo.sql.plan.{physical => p}
-import octo.sql.plan.physical.{Projection, Stage, InternalRow => ScalaInternalRow}
+import octo.sql.plan.physical.{PhysicalPlan, Projection, InternalRow => ScalaInternalRow}
 import octo.sql.plan.physical.codegen.Implicits._
 import octo.compiler.JavaClassCompiler.global
 import octo.compiler.JavaClassSpec
@@ -12,7 +12,7 @@ import octo.sql.{Row => ScalaRow}
 
 import scala.util.{Failure, Success}
 
-case class CodeGeneratedProjection(childStage: Stage, generatedCode: String) extends Projection {
+/*case class CodeGeneratedProjection(childStage: PhysicalPlan, generatedCode: String) extends PhysicalPlan with CodeGenerator {
 
   def execute(): Iterator[ScalaRow] = {
     val packageName = "octo.sql.physical.codegen"
@@ -58,4 +58,4 @@ case class CodeGeneratedProjection(childStage: Stage, generatedCode: String) ext
     constructor.newInstance(childRows.wrapForJava).asInstanceOf[RowCodeGeneratedIterator].unwrapForScala
   }
 
-}
+}*/

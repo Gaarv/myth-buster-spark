@@ -6,11 +6,11 @@ import scala.util.Try
 
 package object physical {
 
-  type InternalRow = Map[(TableName, ColumnName), Any]
+  type InternalRow = Map[(Option[TableName], ColumnName), Any]
 
   implicit class PhysicalRowImplicits(physicalRow: InternalRow) {
 
-    def toRow: Row = physicalRow.map({ case ((_, columnName), value) => (columnName, value)})
+    def toRow: Row = physicalRow.map({ case ((tableName, columnName), value) => (tableName.map(n => s"${n}.").getOrElse("") + columnName, value)})
 
   }
 

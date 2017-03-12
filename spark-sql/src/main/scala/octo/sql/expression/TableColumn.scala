@@ -10,7 +10,7 @@ case class TableColumn(tableName: TableName, columnName: ColumnName) extends Exp
 
   override type Type = Any
 
-  override def evaluate(row: InternalRow): Type = row((tableName, columnName))
+  override def evaluate(row: InternalRow): Type = row((Some(tableName), columnName))
 
   override def generateCode(javaVariableName: String): String =
     s"""

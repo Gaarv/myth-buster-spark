@@ -1,6 +1,6 @@
 package octo.sql.plan
 
-import octo.sql.plan.physical.{PhysicalPlan, Stage}
+import octo.sql.plan.physical.{PhysicalPlan}
 import octo.sql.plan.physical.codegen.CodeGenerator
 
 object QueryOptimizer {
@@ -10,7 +10,7 @@ object QueryOptimizer {
     null
   }
 
-  protected def optimizeStage(stage: Stage) = {
+  protected def optimizeStage() = {
     /*case codeGenerator: CodeGenerator => {
       val code = codeGenerator.generateCode()
 

@@ -8,30 +8,18 @@ import octo.sql.plan.physical.codegen.CodeGenerator
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
-case class PhysicalPlan(projection: Projection) {
-
-  def execute(): Iterator[Row] = projection.execute()
-
-}
-
-trait Stage {
+trait PhysicalPlan {
 
   def execute(): Iterator[InternalRow]
 
 }
 
-trait Projection {
-
-  def execute(): Iterator[Row]
-
-}
-
-case class TableScan(tableName: TableName, iterable: Iterable[Row]) extends Stage {
+case class TableScan(tableName: TableName, iterable: Iterable[Row]) extends PhysicalPlan {
 
   override def execute(): Iterator[InternalRow] = iterable.iterator.map(_.toInternalRow(tableName))
 }
 
-case class Filter(child: Stage, expression: e.Expression) extends Stage with CodeGenerator {
+case class Filter(child: PhysicalPlan, expression: e.Expression) extends PhysicalPlan with CodeGenerator {
 
   override def execute() : Iterator[InternalRow] = {
     expression.toPredicate match {
@@ -53,7 +41,7 @@ case class Filter(child: Stage, expression: e.Expression) extends Stage with Cod
 
 }
 
-case class CartesianProduct(leftChild: Stage, rightChild: Stage) extends Stage {
+case class CartesianProduct(leftChild: PhysicalPlan, rightChild: PhysicalPlan) extends PhysicalPlan {
 
   override def execute(): Iterator[InternalRow] = for {
     leftRow <- leftChild.execute()
@@ -61,12 +49,16 @@ case class CartesianProduct(leftChild: Stage, rightChild: Stage) extends Stage {
   } yield leftRow ++ rightRow
 }
 
-case class EvaluatedProjection(child: Stage, expressions : Seq[e.Expression]) extends Projection with CodeGenerator {
+case class Projection(child: PhysicalPlan, expressions : Seq[e.Expression]) extends PhysicalPlan with CodeGenerator {
 
-  def execute(): Iterator[Row] = child.execute().map({ physicalRow: InternalRow =>
+  def execute(): Iterator[InternalRow] = child.execute().map({ physicalRow: InternalRow =>
     Map(expressions.zipWithIndex.map({ case (expression: e.Expression, index: Int) =>
       val value = expression.evaluate(physicalRow)
-      s"column_${index}" -> value
+      (expression match {
+        case e.NamedExpression(expressionName) => (None, expressionName)
+        case _ => (None, s"column_${index}")
+      }) -> value
+
     }): _*)
   })
 

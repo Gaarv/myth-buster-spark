@@ -5,6 +5,7 @@ import octo.sql.parser.Parser
 import octo.sql.plan.QueryPlanner
 import octo.sql.plan.logical.LogicalPlan
 import octo.sql.plan.physical.PhysicalPlan
+import octo.sql.plan.physical._
 
 import scala.util.{Failure, Success, Try}
 
@@ -14,7 +15,7 @@ object Query {
     tokens <- Lexer(sql)
     ast <- Parser(tokens)
     logicalPlan <- LogicalPlan(ast)
-    physicalPlan <- QueryPlanner.planQuery(logicalPlan)
+    physicalPlan <- Success(QueryPlanner.planQuery(logicalPlan))
     _ = println(physicalPlan)
     query <- Success(new Query(physicalPlan, tableRegistry))
   } yield query
@@ -23,6 +24,6 @@ object Query {
 
 class Query(physicalPlan: PhysicalPlan, tableRegistry: TableRegistry) {
 
-  def fetch(): Iterator[Row] = physicalPlan.execute()
+  def fetch(): Iterator[Row] = physicalPlan.execute().map(_.toRow)
 
 }
