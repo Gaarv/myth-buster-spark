@@ -45,7 +45,11 @@ class QuerySpec extends UnitSpec {
       """.stripMargin
 
     Query(sql) match {
-      case Success(query) => query.fetch().foreach(println)
+      case Success(query) => {
+        val result = query.fetch().toSeq
+        result.foreach(println)
+        result.length should be(2)
+      }
       case Failure(e) => fail(e)
     }
   }

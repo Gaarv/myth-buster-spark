@@ -2,11 +2,13 @@ package octo.sql.plan.physical.codegen.spi;
 
 import com.google.common.collect.Maps;
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 public class InternalRow {
 
-    private Map<TableNameAndColumnName, Object> valueByTableNameAndColumName = Maps.newHashMap();
+    private Map<TableNameAndColumnName, Object> valueByTableNameAndColumName;
 
     private InternalRow(Map<TableNameAndColumnName, Object> valueByTableNameAndColumName) {
         super();
@@ -22,7 +24,20 @@ public class InternalRow {
     }
 
     public Object getValue(TableNameAndColumnName tableNameAndColumnName) {
-        return valueByTableNameAndColumName.get(valueByTableNameAndColumName);
+        return valueByTableNameAndColumName.get(tableNameAndColumnName);
+    }
+
+    public void setValue(TableNameAndColumnName tableNameAndColumnName, Object value) {
+        this.valueByTableNameAndColumName.put(tableNameAndColumnName, value);
+    }
+
+    public static InternalRow create() {
+        return new InternalRow(new HashMap<>());
+    }
+
+    @Override
+    public String toString() {
+        return "InternalRow(" + valueByTableNameAndColumName + ")";
     }
 
 }

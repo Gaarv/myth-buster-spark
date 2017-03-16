@@ -25,8 +25,8 @@ trait CodeGenerationSupport {
     throw new UnsupportedOperationException("This method is not implemented! ")
   }
 
-  def inputRowIterators: Seq[Iterator[p.InternalRow]] = {
-    child.asInstanceOf[CodeGenerationSupport].inputRowIterators
+  def inputRows: Iterator[p.InternalRow] = {
+    child.asInstanceOf[CodeGenerationSupport].inputRows
   }
 
 

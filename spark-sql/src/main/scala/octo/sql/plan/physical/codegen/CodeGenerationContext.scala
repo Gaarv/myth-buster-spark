@@ -1,3 +1,13 @@
 package octo.sql.plan.physical.codegen
 
-case class CodeGenerationContext()
+case class CodeGenerationContext() {
+
+  private var variableCount = 0
+
+  def freshVariableName(): String = {
+    val variableName = s"var${variableCount}"
+    variableCount = variableCount + 1
+    variableName
+  }
+
+}

@@ -8,17 +8,15 @@ case class Input(child: p.PhysicalPlan) extends p.PhysicalPlan with t.UnaryTreeN
   override def execute() = child.execute()
 
   override protected def doProduceCode(codeGenerationContext: CodeGenerationContext) = {
-    val input = "toto"
-    var row = "tata"
-    s"""
-       | while ($input.hasNext() && !stopEarly()) {
-       |   InternalRow $row = (InternalRow) $input.next();
-       |   ${consumeCode(codeGenerationContext, row).trim}
-       |   if (shouldStop()) return;
+    val variableName = codeGenerationContext.freshVariableName()
+    s""" while (hasNextChildRow()) {
+       |   InternalRow ${variableName} = nextChildRow();
+       |   ${consumeCode(codeGenerationContext, variableName)}
+       |   if (!shouldContinue()) return;
        | }
      """.stripMargin
   }
 
-  override def inputRowIterators = child.execute() :: Nil
+  override def inputRows = child.execute()
 
 }

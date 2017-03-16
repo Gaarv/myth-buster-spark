@@ -66,7 +66,7 @@ case class Number(val value: Float) extends LeafAST {
 object Factorizable {
 
   def unapply(ast: AST): Option[(AST, (AST, AST))] = ast match {
-    case Add(Multiply(a, b), Multiply(c, d)) if a == c => Some((a, (b, d)))
+
     case _ => None
   }
 
@@ -75,9 +75,11 @@ object Factorizable {
 object PlayWithTree {
 
   def main(arguments: Array[String]): Unit = {
+
+    // 2 * -76 + 2 * 34 --> 2 * (-76 + 34)
     var ast: AST = Add(Multiply(Number(2), Opposite(Number(76))), Multiply(Number(2), Number(34)))
     ast = ast.transformDown({
-      case ast @ Factorizable((a, (b, c))) => Multiply(a, Add(b, c))
+      case Add(Multiply(a, b), Multiply(c, d)) if a == c => Multiply(a, Add(b, c))
     })
 
     println(ast)

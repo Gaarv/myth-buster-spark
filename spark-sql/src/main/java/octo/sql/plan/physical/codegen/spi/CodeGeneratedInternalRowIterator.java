@@ -5,13 +5,13 @@ import com.google.common.collect.Lists;
 import java.util.Iterator;
 import java.util.LinkedList;
 
-public abstract class CodeGeneratedIterator<O> implements Iterator<O> {
+public abstract class CodeGeneratedInternalRowIterator implements Iterator<InternalRow> {
 
-    protected LinkedList<Object> currentRows = Lists.newLinkedList();
+    protected LinkedList<InternalRow> currentRows = Lists.newLinkedList();
 
     private Iterator<InternalRow> childRows;
 
-    public CodeGeneratedIterator(Iterator<InternalRow> childRows) {
+    public CodeGeneratedInternalRowIterator(Iterator<InternalRow> childRows) {
         super();
 
         this.childRows = childRows;
@@ -37,25 +37,30 @@ public abstract class CodeGeneratedIterator<O> implements Iterator<O> {
         return childRows.next();
     }
 
-    public boolean hasNext() {
-        if (currentRows.isEmpty()) {
-            continueProcessing();
-        }
-        return !currentRows.isEmpty();
-    }
-
-    public O next() {
-        return (O) currentRows.remove();
-    }
-
     protected void addToCurrentRow(InternalRow row) {
         currentRows.add(row);
     }
 
-    protected boolean shouldProcessingContinue() {
+    protected boolean shouldContinue() {
         return !currentRows.isEmpty();
     }
 
-    protected abstract void continueProcessing();
+    protected abstract void doContinue();
+
+    public LinkedList<InternalRow> getCurrentRows() {
+        return currentRows;
+    }
+
+    public boolean hasNext() {
+        if (currentRows.isEmpty()) {
+            doContinue();
+        }
+        return !currentRows.isEmpty();
+    }
+
+    public InternalRow next() {
+        return currentRows.remove();
+    }
+
 
 }

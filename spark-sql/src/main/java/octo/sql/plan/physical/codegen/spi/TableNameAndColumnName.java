@@ -41,4 +41,9 @@ public class TableNameAndColumnName {
         return equality;
     }
 
+    @Override
+    public String toString() {
+        return "TableNameAndColumnName(" + tableName + ", " + columnName + ")";
+    }
+
 }

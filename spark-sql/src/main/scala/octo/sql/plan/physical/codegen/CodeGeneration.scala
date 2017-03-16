@@ -8,7 +8,7 @@ import octo.compiler.JavaClassSpec
 import java.util.{Iterator => JavaIterator}
 
 import scala.collection.JavaConverters._
-import octo.sql.plan.physical.codegen.spi.{InternalRow, InternalRowCodeGeneratedIterator}
+import octo.sql.plan.physical.codegen.spi.{InternalRow, CodeGeneratedInternalRowIterator}
 import octo.sql.plan.physical.{InternalRow => ScalaInternalRow}
 
 import scala.util.{Failure, Success}
@@ -26,44 +26,43 @@ case class CodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with t.U
     val code = generateCode()
 
     val packageName = "octo.sql.physical.codegen.impl"
-    val classSimpleName = "InternalRowCodeGeneratedIteratorImpl"
+    val classSimpleName = "CodeGeneratedInternalRowIteratorImpl"
     val className = s"${packageName}.${classSimpleName}"
     val classCode =
       s"""
         |package ${packageName};
         |
         |import java.util.Iterator;
-        |import com.octo.nad.GeneratedIterator;
         |import java.io.IOException;
         |import java.util.Map;
-        |import octo.sql.plan.physical.codegen.spi.InternalRowCodeGeneratedIterator;
+        |import octo.sql.plan.physical.codegen.spi.CodeGeneratedInternalRowIterator;
         |import octo.sql.plan.physical.codegen.spi.InternalRow;
-        |import octo.sql.plan.physical.codegen.spi.CodeGeneratedIterator;
         |import octo.sql.plan.physical.codegen.spi.TableNameAndColumnName;
         |import java.util.LinkedList;
         |import java.util.HashMap;
+        |import java.util.Optional;
         |
         |
-        |public class $classSimpleName extends InternalRowCodeGeneratedIterator {
+        |public class $classSimpleName extends CodeGeneratedInternalRowIterator {
         |
         |   public $classSimpleName(Iterator<InternalRow> childRows) {
         |     super(childRows);
         |   }
         |
         |   @Override
-        |   protected void continueProcessing() {
-        |     while(shouldContinueProcessing() && addNextChildRowToCurrentRows()) {
-        |        ${code}
-        |      }
+        |   protected void doContinue() {
+        |     ${code}
         |   }
         |
         |}
       """.stripMargin
 
-    logger.debug("classCode={}", classCode)
+    logger.debug("classCode={}", classCode.split("\n").zipWithIndex.map({ case (line, index) =>
+      s"${index} ${line}"
+    }).mkString("\n"))
 
     JavaClassSpec(className, classCode).compile() match {
-      case Success(generatedClass) => newInstanceOfGeneratedClass(generatedClass, child.asInstanceOf[CodeGenerationSupport].inputRowIterators)
+      case Success(generatedClass) => newInstanceOfGeneratedClass(generatedClass, child.asInstanceOf[CodeGenerationSupport].inputRows)
       case Failure(e) => throw e
     }
   }
@@ -72,7 +71,7 @@ case class CodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with t.U
     throw new UnsupportedOperationException("This method is not implemented! ")
   }
 
-  override def inputRowIterators = {
+  override def inputRows = {
     throw new UnsupportedOperationException("This method is not implemented! ")
   }
 
@@ -82,9 +81,9 @@ case class CodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with t.U
      """.stripMargin.trim
   }
 
-  protected def newInstanceOfGeneratedClass(generatedClass: Class[_], childRows: Seq[Iterator[ScalaInternalRow]]): Iterator[ScalaInternalRow] = {
+  protected def newInstanceOfGeneratedClass(generatedClass: Class[_], childRows: Iterator[ScalaInternalRow]): Iterator[ScalaInternalRow] = {
     val constructor = generatedClass.getConstructor(classOf[JavaIterator[InternalRow]])
-    constructor.newInstance(childRows.map(_.wrapForJava).asJava).asInstanceOf[InternalRowCodeGeneratedIterator].unwrapForScala
+    constructor.newInstance(childRows.wrapForJava).asInstanceOf[CodeGeneratedInternalRowIterator].unwrapForScala
   }
 
 }

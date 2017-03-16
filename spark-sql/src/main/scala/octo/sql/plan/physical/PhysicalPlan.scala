@@ -30,16 +30,12 @@ case class Filter(child: PhysicalPlan, expression: e.Expression) extends Physica
     }
   }
 
-  override def doConsumeCode(codeGenerationContext: CodeGenerationContext, parentCode: c.Code): c.Code =
+  override def doConsumeCode(codeGenerationContext: CodeGenerationContext, variableName: c.Code): c.Code = {
     s"""
-      |InternalRow firstRow = getCurrentRows().getFirst();
-      |if(!(${expression.generateCode("firstRow")})) {
-      |  getCurrentRows().pop();
-      |}
-      |else {
-      |  $parentCode
-      |}
+      |if(!(${expression.generateCode(variableName)})) continue;
+      |${consumeCode(codeGenerationContext, variableName)}
     """.stripMargin
+  }
 
 }
 
@@ -64,18 +60,18 @@ case class Projection(child: PhysicalPlan, expressions : Seq[e.Expression]) exte
     }): _*)
   })
 
-  override def doConsumeCode(codeGenerationContext: c.CodeGenerationContext, rowVariableName: c.Code): c.Code =
-    s"""
-      |InternalRow internalRowForProjection = currentRows.getFirst();
-      |Object valuesForProjection[] = {
-      |  ${expressions.map(_.generateCode("internalRowForProjection")).mkString(",\n")}
-      |};
-      |Row rowForProjection = Row.empty();
-      |for(int index = 0; index < valuesForProjection.length; index++) {
-      |  rowForProjection.setValue("column_" + index, valuesForProjection[index]);
-      |}
-      |currentRows.pop();
-      |currentRows.add(rowForProjection);
+  override def doConsumeCode(codeGenerationContext: c.CodeGenerationContext, variableName: c.Code): c.Code = {
+    val internalRowWithProjection = codeGenerationContext.freshVariableName()
+    val arrayVariableName = codeGenerationContext.freshVariableName()
+    s"""Object ${arrayVariableName}[] = {
+       |  ${expressions.map(_.generateCode(variableName)).mkString(",\n")}
+       |};
+       |InternalRow ${internalRowWithProjection} = InternalRow.create();
+       |for(int index = 0; index < ${arrayVariableName}.length; index++) {
+       |  ${internalRowWithProjection}.setValue(TableNameAndColumnName.of(Optional.empty(), "column_" + index), ${arrayVariableName}[index]);
+       |}
+       |currentRows.add(${internalRowWithProjection});
     """.stripMargin
+  }
 
 }
