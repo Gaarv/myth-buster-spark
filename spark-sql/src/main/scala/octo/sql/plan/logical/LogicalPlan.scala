@@ -1,18 +1,21 @@
 package octo.sql.plan.logical
 
-import octo.sql.{ expression => e }
-import octo.sql.{ parser => p }
-import scala.util.{ Try, Success, Failure }
+import octo.sql.plan.Plan
+import octo.{tree => t}
+import octo.sql.{expression => e}
+import octo.sql.{parser => p}
 
-sealed trait LogicalPlan
+import scala.util.{Failure, Success, Try}
 
-case class CartesianProduct(leftChild: LogicalPlan, rightChild: LogicalPlan) extends LogicalPlan
+sealed trait LogicalPlan extends Plan[LogicalPlan]
 
-case class Filter(child: LogicalPlan, expression: e.Expression) extends LogicalPlan
+case class CartesianProduct(leftChild: LogicalPlan, rightChild: LogicalPlan) extends LogicalPlan with t.BinaryTreeNode[LogicalPlan]
 
-case class Projection(child: LogicalPlan, expression: Seq[e.Expression]) extends LogicalPlan
+case class Filter(child: LogicalPlan, expression: e.Expression) extends LogicalPlan with t.UnaryTreeNode[LogicalPlan]
 
-case class Scan(tableName: String) extends LogicalPlan
+case class Projection(child: LogicalPlan, expression: Seq[e.Expression]) extends LogicalPlan with t.UnaryTreeNode[LogicalPlan]
+
+case class Scan(tableName: String) extends LogicalPlan with t.LeafTreeNode[LogicalPlan]
 
 object LogicalPlan {
 

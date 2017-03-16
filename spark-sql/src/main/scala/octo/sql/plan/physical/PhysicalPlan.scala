@@ -3,23 +3,25 @@ package octo.sql.plan.physical
 import octo.sql.{Row, TableName}
 import octo.sql.{expression => e}
 import octo.sql._
-import octo.sql.plan.physical.codegen.CodeGenerator
+import octo.sql.plan.Plan
+import octo.sql.plan.physical.codegen.CodeGenerationContext
+import octo.sql.plan.physical.{codegen => c}
+import octo.{tree => t}
 
-import scala.collection.JavaConverters._
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
-trait PhysicalPlan {
+trait PhysicalPlan extends Plan[PhysicalPlan] with t.TreeNode[PhysicalPlan] {
 
   def execute(): Iterator[InternalRow]
 
 }
 
-case class TableScan(tableName: TableName, iterable: Iterable[Row]) extends PhysicalPlan {
+case class TableScan(tableName: TableName, iterable: Iterable[Row]) extends PhysicalPlan with t.LeafTreeNode[PhysicalPlan] {
 
   override def execute(): Iterator[InternalRow] = iterable.iterator.map(_.toInternalRow(tableName))
 }
 
-case class Filter(child: PhysicalPlan, expression: e.Expression) extends PhysicalPlan with CodeGenerator {
+case class Filter(child: PhysicalPlan, expression: e.Expression) extends PhysicalPlan with c.CodeGenerationSupport with t.UnaryTreeNode[PhysicalPlan] {
 
   override def execute() : Iterator[InternalRow] = {
     expression.toPredicate match {
@@ -28,7 +30,7 @@ case class Filter(child: PhysicalPlan, expression: e.Expression) extends Physica
     }
   }
 
-  override def generateCode(parentCode: String): String =
+  override def doConsumeCode(codeGenerationContext: CodeGenerationContext, parentCode: c.Code): c.Code =
     s"""
       |InternalRow firstRow = getCurrentRows().getFirst();
       |if(!(${expression.generateCode("firstRow")})) {
@@ -41,7 +43,7 @@ case class Filter(child: PhysicalPlan, expression: e.Expression) extends Physica
 
 }
 
-case class CartesianProduct(leftChild: PhysicalPlan, rightChild: PhysicalPlan) extends PhysicalPlan {
+case class CartesianProduct(leftChild: PhysicalPlan, rightChild: PhysicalPlan) extends PhysicalPlan with t.BinaryTreeNode[PhysicalPlan] {
 
   override def execute(): Iterator[InternalRow] = for {
     leftRow <- leftChild.execute()
@@ -49,7 +51,7 @@ case class CartesianProduct(leftChild: PhysicalPlan, rightChild: PhysicalPlan) e
   } yield leftRow ++ rightRow
 }
 
-case class Projection(child: PhysicalPlan, expressions : Seq[e.Expression]) extends PhysicalPlan with CodeGenerator {
+case class Projection(child: PhysicalPlan, expressions : Seq[e.Expression]) extends PhysicalPlan with t.UnaryTreeNode[PhysicalPlan] with c.CodeGenerationSupport {
 
   def execute(): Iterator[InternalRow] = child.execute().map({ physicalRow: InternalRow =>
     Map(expressions.zipWithIndex.map({ case (expression: e.Expression, index: Int) =>
@@ -62,7 +64,7 @@ case class Projection(child: PhysicalPlan, expressions : Seq[e.Expression]) exte
     }): _*)
   })
 
-  override def generateCode(parentCode: String): String =
+  override def doConsumeCode(codeGenerationContext: c.CodeGenerationContext, rowVariableName: c.Code): c.Code =
     s"""
       |InternalRow internalRowForProjection = currentRows.getFirst();
       |Object valuesForProjection[] = {

@@ -22,16 +22,22 @@ package object tree {
     }
 
     def transformDown(pf: PartialFunction[Type, Type]): Type = {
-      pf.applyOrElse(this, identity[Type]).mapChildren(_.transformDown(pf))
+      val t = pf.applyOrElse(this, identity[Type])
+      println(t)
+      t.mapChildren(_.transformDown(pf))
     }
 
     def mapChildren(f: Type => Type): Type = copyWithNewChildren(children.map(f))
 
     def copyWithNewChildren(children: Seq[Type]): Type
 
-    protected def copyWithNewChildrenUsingConstructor(newChildren: Seq[Type]) : Type = {
-      getClass.getConstructors.filter(_.getParameters.size == newChildren.size).toSeq match {
-        case Seq(constructor) => constructor.newInstance(newChildren.map(_.asInstanceOf[Object]): _*).asInstanceOf[Type]
+    protected def copyWithNewChildrenUsingConstructor(newChildren: Seq[Type], expectedChildCount: Int = -1) : Type = {
+      if (expectedChildCount >= 0 && newChildren.length > expectedChildCount) throw new IllegalArgumentException("There is to much children")
+
+      val constructorArguments = newChildren ++ productIterator.toSeq.drop(newChildren.length)
+
+      getClass.getConstructors.filter(_.getParameters.size == productArity).toSeq match {
+        case Seq(constructor) => constructor.newInstance(constructorArguments.map(_.asInstanceOf[Object]): _*).asInstanceOf[Type]
         case _ => throw new IllegalArgumentException(s"Unable to find a suitable constructor in order to copy ${this} with new children")
       }
     }
@@ -65,6 +71,18 @@ package object tree {
     override def copyWithNewChildren(children: Seq[Type]) = copyWithNewChildrenUsingConstructor(children)
 
     override def children = Seq(leftChild, rightChild)
+
+  }
+
+  trait UnaryTreeNode[Type <: TreeNode[Type]] extends TreeNode[Type] {
+    self: Type =>
+
+    val child: Type
+
+    override def copyWithNewChildren(children: Seq[Type]) = copyWithNewChildrenUsingConstructor(children)
+
+    override def children = Seq(child)
+
 
   }
 

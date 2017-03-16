@@ -12,17 +12,23 @@ trait AST extends TreeNode[AST] {
 
 }
 
-trait BinaryAST extends AST with BinaryTreeNode[AST] {
+trait BinaryAST extends AST with BinaryTreeNode[AST]
 
+trait LeafAST extends AST with LeafTreeNode[AST]
 
+trait UnaryAST extends AST with UnaryTreeNode[AST]
+
+trait UnaryArityOperation extends UnaryAST {
+
+  type Operator = (Float) => Float
+
+  val operator: Operator
+
+  override def evaluate() = operator(child.evaluate())
 
 }
 
-trait LeafAST extends AST with LeafTreeNode[AST] {
-
-}
-
-trait Operation extends BinaryAST {
+trait BinaryArityOperation extends BinaryAST {
 
   type Operator = (Float, Float) => Float
 
@@ -32,13 +38,19 @@ trait Operation extends BinaryAST {
 
 }
 
-case class Add(leftChild: AST, rightChild: AST) extends Operation {
+case class Add(leftChild: AST, rightChild: AST) extends BinaryArityOperation {
 
   val operator: Operator = { _ + _ }
 
 }
 
-case class Multiply(leftChild: AST, rightChild: AST) extends Operation {
+case class Opposite(child: AST) extends UnaryArityOperation {
+
+  val operator = { -1 * _ }
+
+}
+
+case class Multiply(leftChild: AST, rightChild: AST) extends BinaryArityOperation {
 
   val operator: Operator = { _ * _ }
 
@@ -63,7 +75,7 @@ object Factorizable {
 object PlayWithTree {
 
   def main(arguments: Array[String]): Unit = {
-    var ast: AST = Add(Multiply(Number(2), Number(76)), Multiply(Number(2), Number(34)))
+    var ast: AST = Add(Multiply(Number(2), Opposite(Number(76))), Multiply(Number(2), Number(34)))
     ast = ast.transformDown({
       case ast @ Factorizable((a, (b, c))) => Multiply(a, Add(b, c))
     })

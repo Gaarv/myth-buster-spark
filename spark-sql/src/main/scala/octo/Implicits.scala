@@ -2,7 +2,7 @@ package octo
 
 import scala.util.{ Try, Success, Failure }
 
-object Implicits {
+object Implicits extends Java8Implicits {
 
   implicit class OptionToTry[A](option: Option[A]) {
 

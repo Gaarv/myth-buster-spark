@@ -1,20 +1,21 @@
-package octo.sql.plan.physical.codegen;
+package octo.sql.plan.physical.codegen.spi;
 
 import java.util.Objects;
+import java.util.Optional;
 
 public class TableNameAndColumnName {
 
-    private String tableName;
+    private Optional<String> tableName;
     private String columnName;
 
-    private TableNameAndColumnName(String tableName, String columnName) {
+    private TableNameAndColumnName(Optional<String> tableName, String columnName) {
         super();
 
         this.tableName = tableName;
         this.columnName = columnName;
     }
 
-    public String getTableName() {
+    public Optional<String> getTableName() {
         return tableName;
     }
 
@@ -22,7 +23,7 @@ public class TableNameAndColumnName {
         return columnName;
     }
 
-    public static TableNameAndColumnName of(String tableName, String columnName) {
+    public static TableNameAndColumnName of(Optional<String> tableName, String columnName) {
         return new TableNameAndColumnName(tableName, columnName);
     }
 

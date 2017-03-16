@@ -3,7 +3,7 @@ package octo.sql
 import octo.sql.lexer.Lexer
 import octo.sql.parser.Parser
 import octo.sql.plan.QueryPlanner
-import octo.sql.plan.logical.LogicalPlan
+import octo.sql.plan.logical.{LogicalPlan, LogicalPlanOptimizer}
 import octo.sql.plan.physical.PhysicalPlan
 import octo.sql.plan.physical._
 
@@ -15,10 +15,11 @@ object Query {
     tokens <- Lexer(sql)
     ast <- Parser(tokens)
     logicalPlan <- LogicalPlan(ast)
-    physicalPlan <- Success(QueryPlanner.planQuery(logicalPlan))
-    _ = println(physicalPlan)
-    query <- Success(new Query(physicalPlan, tableRegistry))
-  } yield query
+    optimizedLogicalPlan = LogicalPlanOptimizer.optimizePlan(logicalPlan)
+    physicalPlan <- QueryPlanner.planQuery(optimizedLogicalPlan)
+    optimizedPhysicalPlan = PhysicalPlanOptimizer.optimizePlan(physicalPlan)
+    _ = println(optimizedPhysicalPlan)
+  } yield new Query(optimizedPhysicalPlan, tableRegistry)
 
 }
 

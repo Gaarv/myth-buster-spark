@@ -1,14 +1,13 @@
 package octo.sql.plan.physical.codegen
 
+import octo.Implicits._
 import scala.collection.JavaConverters._
 
-import octo.sql.{ Row => ScalaRow }
+import scala.collection.{ Iterator => ScalaIterator }
+import java.util.{ Iterator => JavaIterator }
+
 import octo.sql.plan.physical.{ InternalRow => ScalaInternalRow }
-
-import octo.sql.plan.physical.codegen.{ InternalRow => JavaInternalRow, Row => JavaRow }
-
-import scala.collection.{Iterator => ScalaIterator}
-import _root_.java.util.{ Iterator => JavaIterator}
+import octo.sql.plan.physical.codegen.spi.{TableNameAndColumnName, InternalRow => JavaInternalRow}
 
 object Implicits {
 
@@ -16,36 +15,19 @@ object Implicits {
 
     def wrapForJava: JavaInternalRow = {
       JavaInternalRow.wrap(internalRow.map({ case ((tableName, columnName),value) =>
-        (TableNameAndColumnName.of(tableName, columnName), value.asInstanceOf[AnyRef])
+        (TableNameAndColumnName.of(tableName.asJava(), columnName), value.asInstanceOf[AnyRef])
       }).asJava)
     }
 
   }
 
-  implicit class JavaInternalRowImplicits(internalRow: InternalRow) {
+  implicit class JavaInternalRowImplicits(internalRow: JavaInternalRow) {
 
     def unwrapForScala: ScalaInternalRow = {
       internalRow.unwrap().asScala.toMap.map({ case (tableNameAndColumnName, value) =>
-        ((tableNameAndColumnName.getTableName, tableNameAndColumnName.getColumnName), value)
+        ((tableNameAndColumnName.getTableName.asScala, tableNameAndColumnName.getColumnName), value)
       })
     }
-  }
-
-  implicit class JavaRowImplicits(row: JavaRow) {
-
-    def unwrapForScala: ScalaRow = {
-      row.unwrap().asScala.toMap
-    }
-  }
-
-  implicit class ScalaRowImplicits(scalaRow: ScalaRow) {
-
-    def wrapForJava: JavaRow = {
-      JavaRow.wrap(scalaRow.map({ case (columnName, value) =>
-        (columnName, value.asInstanceOf[AnyRef])
-      }).asJava)
-    }
-
   }
 
   implicit class ScalaInternalRowIteratorImplicits(iterator: ScalaIterator[ScalaInternalRow]) {
@@ -60,16 +42,5 @@ object Implicits {
 
   }
 
-  implicit class ScalaRowIteratorImplicits(scalaIterator: ScalaIterator[ScalaRow]) {
-
-    def wrapForJava: JavaIterator[JavaRow] = scalaIterator.map(_.wrapForJava).asJava
-
-  }
-
-  implicit class JavaRowIteratorImplicits(javaIterator: JavaIterator[JavaRow]) {
-
-    def unwrapForScala: ScalaIterator[ScalaRow] = javaIterator.asScala.map(_.unwrapForScala)
-
-  }
 
 }
