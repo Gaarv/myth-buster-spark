@@ -1,10 +1,5 @@
 package octo.sql
 
-import octo.UnitSpec
-import octo.sql.{expression => e, lexer => l}
-import octo.sql.parser.{ AST, Parser }
-import octo.sql.lexer.Lexer
-
 import scala.util.{ Try, Success, Failure }
 
 class ExpressionParserSpec extends UnitSpec {

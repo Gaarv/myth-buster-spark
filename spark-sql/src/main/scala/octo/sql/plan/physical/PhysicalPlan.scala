@@ -1,13 +1,5 @@
 package octo.sql.plan.physical
 
-import octo.sql.{Row, TableName}
-import octo.sql.{expression => e}
-import octo.sql._
-import octo.sql.plan.Plan
-import octo.sql.plan.physical.codegen.CodeGenerationContext
-import octo.sql.plan.physical.{codegen => c}
-import octo.{tree => t}
-
 import scala.util.{Failure, Success}
 
 trait PhysicalPlan extends Plan[PhysicalPlan] with t.TreeNode[PhysicalPlan] {

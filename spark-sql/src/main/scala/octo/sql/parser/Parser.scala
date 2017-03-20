@@ -1,13 +1,9 @@
 package octo.sql.parser
 
-import octo.sql.expression.{Equal, TableColumn}
-
 import scala.{ util => u }
-import octo.sql.{lexer => l}
 
 import scala.util.parsing.combinator.Parsers
 import scala.util.parsing.input.{NoPosition, Position, Reader}
-import octo.sql.{expression => e}
 import scala.language.postfixOps
 
 // https://en.wikipedia.org/wiki/LR_parser

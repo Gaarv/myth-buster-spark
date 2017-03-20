@@ -1,7 +1,5 @@
 package octo.sql.parser
 
-import octo.sql.expression._
-
 /**
   * https://github.com/stephentu/scala-sql-parser/blob/master/src/main/scala/ast.scala
   */

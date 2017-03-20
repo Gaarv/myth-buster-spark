@@ -1,7 +1,5 @@
 package octo.sql.expression
 
-import octo.sql.plan.physical.InternalRow
-
 import scala.reflect.runtime.universe._
 import scala.util.{Failure, Success, Try}
 import scala.util.Try

@@ -1,7 +1,5 @@
 package octo.sql
 
-import octo.UnitSpec
-
 import scala.util.{Failure, Success}
 
 class QuerySpec extends UnitSpec {

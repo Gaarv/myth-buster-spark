@@ -1,10 +1,5 @@
 package octo.sql.plan.logical
 
-import octo.sql.plan.Plan
-import octo.{tree => t}
-import octo.sql.{expression => e}
-import octo.sql.{parser => p}
-
 import scala.util.{Failure, Success, Try}
 
 sealed trait LogicalPlan extends Plan[LogicalPlan]

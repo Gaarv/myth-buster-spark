@@ -1,11 +1,5 @@
 package octo.sql
 
-import octo.UnitSpec
-import octo.sql.expression.TableColumn
-import octo.sql.lexer.Lexer
-import octo.sql.parser._
-import octo.sql.expression._
-
 import scala.util.Success
 
 class ParserSpec extends UnitSpec {

@@ -1,8 +1,5 @@
 package octo
 
-import octo.Implicits._
-import octo.sql.plan.physical.InternalRow
-
 import scala.util.Try
 
 package object sql {

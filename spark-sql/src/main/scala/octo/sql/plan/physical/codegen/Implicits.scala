@@ -1,13 +1,9 @@
 package octo.sql.plan.physical.codegen
 
-import octo.Implicits._
 import scala.collection.JavaConverters._
 
 import scala.collection.{ Iterator => ScalaIterator }
 import java.util.{ Iterator => JavaIterator }
-
-import octo.sql.plan.physical.{ InternalRow => ScalaInternalRow }
-import octo.sql.plan.physical.codegen.spi.{TableNameAndColumnName, InternalRow => JavaInternalRow}
 
 object Implicits {
 

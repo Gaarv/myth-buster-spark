@@ -1,12 +1,5 @@
 package octo.sql
 
-import octo.UnitSpec
-import octo.sql.lexer.Lexer
-import octo.sql.parser.Parser
-import octo.sql.plan.QueryPlanner
-import octo.sql.plan.logical.LogicalPlan
-import octo.sql.plan.physical.PhysicalPlan
-
 import scala.util.Success
 
 /*class QueryPlannerSpec extends UnitSpec {

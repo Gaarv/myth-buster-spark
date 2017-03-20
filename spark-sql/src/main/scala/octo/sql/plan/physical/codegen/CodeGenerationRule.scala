@@ -1,8 +1,5 @@
 package octo.sql.plan.physical.codegen
 
-import octo.sql.plan.Rule
-import octo.sql.plan.physical.PhysicalPlan
-
 object CodeGenerationRule extends Rule[PhysicalPlan] {
 
   override def apply(physicalPlan: PhysicalPlan) = insertCodeGeneration(physicalPlan)

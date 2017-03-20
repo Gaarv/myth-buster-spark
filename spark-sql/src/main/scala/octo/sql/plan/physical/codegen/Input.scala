@@ -1,8 +1,5 @@
 package octo.sql.plan.physical.codegen
 
-import octo.sql.plan.{ physical => p }
-import octo.{ tree => t }
-
 case class Input(child: p.PhysicalPlan) extends p.PhysicalPlan with t.UnaryTreeNode[p.PhysicalPlan] with CodeGenerationSupport {
 
   override def execute() = child.execute()

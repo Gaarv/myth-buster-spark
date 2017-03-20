@@ -1,9 +1,5 @@
 package octo.sql.expression
 
-import octo.sql.ColumnName
-import octo.sql.parser.AST
-import octo.sql.plan.physical.InternalRow
-
 import scala.util.{Failure, Try}
 
 trait Expression extends AST {

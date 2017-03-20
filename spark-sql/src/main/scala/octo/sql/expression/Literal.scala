@@ -1,7 +1,5 @@
 package octo.sql.expression
 
-import octo.sql.plan.physical.InternalRow
-
 sealed trait Literal extends Expression {
 
   val value: Type

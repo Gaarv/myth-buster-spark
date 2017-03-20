@@ -1,12 +1,5 @@
 package octo.sql.plan
 
-import octo.Implicits._
-import octo.sql.{expression => e}
-import octo.sql.{Row, TableName, TableRegistry, _}
-import octo.sql.expression.TableColumn
-import octo.sql.plan.physical.PhysicalPlan
-import octo.sql.plan.{logical => l, physical => p}
-
 import scala.util.{Failure, Success, Try}
 
 object QueryPlanner {

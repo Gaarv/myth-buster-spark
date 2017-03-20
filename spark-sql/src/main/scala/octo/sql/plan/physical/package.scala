@@ -1,7 +1,5 @@
 package octo.sql.plan
 
-import octo.sql.{ColumnName, Row, TableName}
-
 import scala.util.Try
 
 package object physical {

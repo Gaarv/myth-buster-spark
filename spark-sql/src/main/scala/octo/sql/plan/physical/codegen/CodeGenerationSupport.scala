@@ -1,7 +1,5 @@
 package octo.sql.plan.physical.codegen
 
-import octo.sql.plan.{ physical => p }
-
 trait CodeGenerationSupport {
 
   val child: p.PhysicalPlan

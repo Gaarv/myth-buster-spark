@@ -1,11 +1,8 @@
 package octo.sql
 
-import octo.UnitSpec
 import scala.util.{Failure, Success, Try}
 
 class SQLSpec extends UnitSpec {
-
-  import octo.sql.lexer._
 
   val validQueries = Map(
     "SELECT a.c1 FROM c" -> Seq(Select(), Identifier("a"), Dot(), Identifier("c1"), From(), Identifier("c")),

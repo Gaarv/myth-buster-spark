@@ -1,18 +1,10 @@
 package octo.sql.plan.physical.codegen
 
-import octo.sql.plan.{physical => p}
-import octo.sql.plan.physical.PhysicalPlan
-import octo.sql.plan.physical.codegen.Implicits._
-import octo.compiler.JavaClassCompiler.global
-import octo.compiler.JavaClassSpec
 import java.util.{Iterator => JavaIterator}
 
 import scala.collection.JavaConverters._
-import octo.sql.plan.physical.codegen.spi.{InternalRow, CodeGeneratedInternalRowIterator}
-import octo.sql.plan.physical.{InternalRow => ScalaInternalRow}
 
 import scala.util.{Failure, Success}
-import octo.{Logging, tree => t}
 
 case class CodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with t.UnaryTreeNode[p.PhysicalPlan] with CodeGenerationSupport with Logging {
 

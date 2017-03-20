@@ -2,10 +2,10 @@ package octo.compiler
 
 import java.io.File._
 import java.net.URLClassLoader
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{ Files, Path, Paths }
 
 import scala.sys.process._
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 
 object JavacJavaClassCompiler extends JavaClassCompiler {
 
