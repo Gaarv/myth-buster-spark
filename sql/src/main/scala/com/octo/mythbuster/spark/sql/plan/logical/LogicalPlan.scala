@@ -1,11 +1,10 @@
 package com.octo.mythbuster.spark.sql.plan.logical
 
 import com.octo.mythbuster.spark.sql.plan.Plan
-import com.octo.mythbuster.spark.{ tree => t }
-import com.octo.mythbuster.spark.sql.{ expression => e }
-import com.octo.mythbuster.spark.sql.{ parser => p }
+import com.octo.mythbuster.spark.{tree => t}
+import com.octo.mythbuster.spark.sql.{RelationName, TableName, expression => e, parser => p}
 
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 
 sealed trait LogicalPlan extends Plan[LogicalPlan]
 
@@ -15,7 +14,7 @@ case class Filter(child: LogicalPlan, expression: e.Expression) extends LogicalP
 
 case class Projection(child: LogicalPlan, expression: Seq[e.Expression]) extends LogicalPlan with t.UnaryTreeNode[LogicalPlan]
 
-case class Scan(tableName: String) extends LogicalPlan with t.LeafTreeNode[LogicalPlan]
+case class TableScan(tableName: TableName, aliasName: Option[RelationName]) extends LogicalPlan with t.LeafTreeNode[LogicalPlan]
 
 object LogicalPlan {
 
@@ -28,7 +27,8 @@ object LogicalPlan {
   }
 
   def apply(ast: p.AST): Try[LogicalPlan] = ast match {
-    case p.Table(tableName) => Success(Scan(tableName))
+    case p.Alias(p.Table(tableName), aliasName) => Success(TableScan(tableName, Some(aliasName)))
+    case p.Table(tableName) => Success(TableScan(tableName, None))
     case p.Join(filter, leftRelation, rightRelation) => for {
       lr <- apply(leftRelation)
       rr <- apply(rightRelation)

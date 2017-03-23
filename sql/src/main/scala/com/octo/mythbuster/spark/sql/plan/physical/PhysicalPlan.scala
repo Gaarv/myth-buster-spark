@@ -1,5 +1,11 @@
 package com.octo.mythbuster.spark.sql.plan.physical
 
+import java.net.URL
+import java.nio.file.Path
+
+import com.google.common.base.Charsets
+import com.google.common.io.Resources
+
 import scala.util.{Failure, Success}
 import com.octo.mythbuster.spark.sql._
 import com.octo.mythbuster.spark.sql.plan.Plan
@@ -19,23 +25,41 @@ trait PhysicalPlan extends Plan[PhysicalPlan] with t.TreeNode[PhysicalPlan] {
     this.isInstanceOf[CodeGenerationSupport]
   }
 
-  def internalFields: Seq[InternalField]
+}
+
+case class CSVFileFullScan(qualifierName: QualifierName, csvFileURL: URL) extends PhysicalPlan with t.LeafTreeNode[PhysicalPlan] {
+
+  import scala.collection.JavaConverters._
+
+  val Separator = ","
+
+  override def execute(): Iterator[InternalRow] = {
+    val charSource = Resources.asCharSource(csvFileURL, Charsets.UTF_8)
+    val columnNames = charSource.readFirstLine().split(Separator)
+    charSource.readLines().asScala.drop(1)
+      .map({ line =>
+        columnNames.zip(line.split(Separator)).toMap[String, Any]
+      })
+      .map(_.toInternalRow(qualifierName))
+      .iterator
+  }
+
+  override def explain(indent: Int = 0): String = {
+    s"${"  " * indent}CSVFileFullScan(${csvFileURL}) ${if (supportCodeGeneration()) "*" else ""}"
+  }
 
 }
 
 // The table scan will produce every Rows contained in the Table as InternalRow
-case class TableScan(tableName: TableName, table: Table) extends PhysicalPlan with t.LeafTreeNode[PhysicalPlan] {
+case class IterableFullScan(qualifierName: QualifierName, iterable: Iterable[Row]) extends PhysicalPlan with t.LeafTreeNode[PhysicalPlan] {
 
   override def execute(): Iterator[InternalRow] = {
-    val (_, iterable) = table
-    iterable.iterator.map(_.toInternalRow(tableName))
+    iterable.iterator.map(_.toInternalRow(qualifierName))
   }
 
   override def explain(indent: Int = 0): String = {
-    s"${"  " * indent}TableScan(${tableName}) ${if (supportCodeGeneration()) "*" else ""}"
+    s"${"  " * indent}IterableFullScan(${qualifierName}) ${if (supportCodeGeneration()) "*" else ""}"
   }
-
-  override def internalFields = table.columnNames.map({ columnName => (Some(tableName), columnName) })
 
 }
 
@@ -53,8 +77,6 @@ case class Filter(child: PhysicalPlan, expression: e.Expression) extends Physica
     s"""${"  " * indent}Filter(${expression}) ${if (supportCodeGeneration()) "*" else ""}
        |${child.explain(indent + 1)}""".stripMargin
   }
-
-  def internalFields = child.internalFields
 
   override def doConsumeCode(codeGenerationContext: c.CodeGenerationContext, variableName: c.Code): c.Code = {
     s"""if(!(${expression.generateCode(variableName)})) continue;
@@ -77,8 +99,6 @@ case class CartesianProduct(leftChild: PhysicalPlan, rightChild: PhysicalPlan) e
        |${rightChild.explain(indent + 1)}""".stripMargin
   }
 
-  override def internalFields = leftChild.internalFields ++ rightChild.internalFields
-
 }
 
 // The projection will map the InternalRows by applying the expressions
@@ -88,7 +108,6 @@ case class Projection(child: PhysicalPlan, expressions : Seq[e.Expression]) exte
     Map(expressions.zipWithIndex.map({ case (expression: e.Expression, index: Int) =>
       val value = expression.evaluate(internalRow)
       (expression match {
-        case e.NamedExpression(expressionName) => (None, expressionName)
         case _ => (None, s"column_${index}")
       }) -> value
 
@@ -113,10 +132,5 @@ case class Projection(child: PhysicalPlan, expressions : Seq[e.Expression]) exte
       |currentRows.add(${internalRowWithProjection});
     """.stripMargin
   }
-
-  override def internalFields = expressions.zipWithIndex.map({
-    case (e.NamedExpression(expressionName), index: Int) => expressionName
-    case (_, index) => s"column_${index}"
-  }).map({ columnName => (None, columnName) })
 
 }

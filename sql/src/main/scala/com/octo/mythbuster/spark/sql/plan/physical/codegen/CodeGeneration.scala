@@ -93,6 +93,4 @@ case class CodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with t.U
     child.explain(indent)
   }
 
-  override def internalFields = child.internalFields
-
 }

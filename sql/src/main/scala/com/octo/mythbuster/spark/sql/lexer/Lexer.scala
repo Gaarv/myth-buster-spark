@@ -45,6 +45,8 @@ object Lexer extends RegexParsers {
 
   def rightParenthesis: Parser[RightParenthesis] = positioned { ")" ^^ { _ => RightParenthesis() } }
 
+  def as: Parser[As] = positioned { "AS" ^^ { _ => As() } }
+
   def tokens: Parser[Seq[Token]] = { phrase(rep1(select | from | where | dot | equal | `true` | `false` | comma | identifier | join | on | number | text | greater | less | or | and | leftParenthesis | rightParenthesis )) } ^^ { _.toSeq }
 
   def apply(query: String): util.Try[Seq[Token]] = {

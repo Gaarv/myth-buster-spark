@@ -22,6 +22,6 @@ package object sample {
     Company(2, "Toyota")
   )
 
-  implicit val tableRegistry: TableRegistry = tableOfCar(cars) ++ tableOfCompany(companies)
+  implicit val tableRegistry: TableRegistry = /*tableOfCar(cars) ++ */tableOfCompany(companies)
 
 }

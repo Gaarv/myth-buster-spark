@@ -21,7 +21,9 @@ public class InternalRow {
     }
 
     public Object getValue(TableNameAndColumnName tableNameAndColumnName) {
-        return valueByTableNameAndColumName.get(tableNameAndColumnName);
+        Object value = valueByTableNameAndColumName.get(tableNameAndColumnName);
+        if (value == null) throw new RuntimeException("There is no " + tableNameAndColumnName + " column");
+        return value;
     }
 
     public void setValue(TableNameAndColumnName tableNameAndColumnName, Object value) {

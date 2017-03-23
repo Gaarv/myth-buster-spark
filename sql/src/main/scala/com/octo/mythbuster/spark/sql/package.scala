@@ -9,6 +9,12 @@ package object sql {
 
   type Name = String
 
+  type ExpressionName = Name
+
+  type RelationName = Name
+
+  type QualifierName = Name
+
   type ColumnName = Name
 
   type TableName = Name

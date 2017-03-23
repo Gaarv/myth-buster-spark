@@ -63,7 +63,12 @@ object Parser extends Parsers {
 
   def where = l.Where() ~> expression
 
-  def projections = repsep(expression, l.Comma())
+  def projection = expression ~ opt(l.As() ~ identifier) ^^ {
+    case expression ~ None => expression
+    case expression ~ Some(_ ~ l.Identifier(value)) => e.Alias(expression, value)
+  }
+
+  def projections = repsep(projection, l.Comma())
 
   def relations = l.From() ~> rep1sep(relation, l.Comma())
 
@@ -71,7 +76,11 @@ object Parser extends Parsers {
     case lhs ~ elements => elements.foldLeft(lhs) { case (leftRelation, (rightRelation, filter)) => Join(filter, leftRelation, rightRelation) }
   }
 
-  def simpleRelation: Parser[Relation] = table
+  def simpleRelation: Parser[Relation] = table ~ opt(opt(l.As()) ~ identifier) ^^ {
+    case table ~ None => table
+    case table ~ Some(_ ~ l.Identifier(value)) => Alias(table, value)
+
+  }
 
   def table = { identifier } ^^ { case l.Identifier(tableName) => Table(tableName) }
 

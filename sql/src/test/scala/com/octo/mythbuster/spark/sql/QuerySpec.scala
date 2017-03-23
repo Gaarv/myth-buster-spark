@@ -10,15 +10,15 @@ class QuerySpec extends UnitSpec {
   val sql =
     """
       |SELECT
-      |  cars.name
+      |  ca.name
       |FROM
-      |  cars
+      |  cars ca
       |JOIN
-      |  companies
+      |  companies co
       |ON
-      |  cars.company_id = companies.id
+      |  ca.company_id = co.id
       |WHERE
-      |  companies.name = 'Toyota'
+      |  co.name = 'Toyota'
     """.stripMargin
 
   val query = Query(sql)

@@ -48,3 +48,5 @@ case class True() extends Token
 
 case class False() extends Token
 
+case class As() extends Token
+

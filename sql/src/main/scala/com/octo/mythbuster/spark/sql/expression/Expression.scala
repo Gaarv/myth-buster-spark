@@ -29,12 +29,19 @@ trait Predicate extends Expression {
 
 }
 
-object NamedExpression {
+trait NamedExpression {
 
-  def unapply(e: Expression): Option[ColumnName] = e match {
-    case TableColumn(tableName, columnName) => Some(s"${tableName}.${columnName}")
-    case _ => None
-  }
+  val name: ExpressionName
+
+}
+
+case class Alias(child: Expression, name: ExpressionName) extends UnaryOperation with NamedExpression {
+
+  type Type = child.Type
+
+  override def evaluate(row: InternalRow) = child.evaluate(row)
+
+  override def generateCode(javaVariableName: String) = child.generateCode(javaVariableName)
 
 }
 
@@ -43,6 +50,12 @@ case class And(leftChild: Expression, rightChild: Expression) extends BinaryOper
   override val javaOperator: String = "&&"
 
   override def evaluate(row: InternalRow) = typed[Boolean](row) { _ &&  _ }
+
+}
+
+trait UnaryOperation extends Expression {
+
+  val child: Expression
 
 }
 
@@ -83,7 +96,7 @@ case class Equal(leftChild: Expression, rightChild: Expression) extends BinaryOp
   override def evaluate(row: InternalRow) = typed[Any](row) { (left: Any, right: Any) => left == right }
 
   override def generateCode(javaVariableName: String): String = {
-    s"(${leftChild.generateCode(javaVariableName)}.equals(${rightChild.generateCode(javaVariableName)}))"
+    s"((${leftChild.generateCode(javaVariableName)}).toString().equals((${rightChild.generateCode(javaVariableName)}).toString()))"
   }
 
 }
@@ -141,9 +154,11 @@ case class Or(leftChild: Expression, rightChild: Expression) extends BinaryOpera
 
 }
 
-case class TableColumn(tableName: TableName, columnName: ColumnName) extends Expression {
+case class TableColumn(tableName: TableName, columnName: ColumnName) extends Expression with NamedExpression {
 
   override type Type = Any
+
+  val name = columnName
 
   override def evaluate(row: InternalRow): Type = row((Some(tableName), columnName))
 
