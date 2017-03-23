@@ -2,15 +2,15 @@ package com.octo.mythbuster.spark.sql.plan
 
 import com.octo.mythbuster.spark.sql.{ ColumnName, Row, TableName }
 
-import scala.util.Try
-
 package object physical {
 
-  type InternalRow = Map[(Option[TableName], ColumnName), Any]
+  type InternalField = (Option[TableName], ColumnName)
 
-  implicit class PhysicalRowImplicits(physicalRow: InternalRow) {
+  type InternalRow = Map[InternalField, Any]
 
-    def toRow: Row = physicalRow.map({ case ((tableName, columnName), value) => (tableName.map(n => s"${n}.").getOrElse("") + columnName, value)})
+  implicit class InternalRowImplicits(internalRow: InternalRow) {
+
+    def toRow: Row = internalRow.map({ case ((tableName, columnName), value) => (tableName.map(n => s"${n}.").getOrElse("") + columnName, value)})
 
   }
 

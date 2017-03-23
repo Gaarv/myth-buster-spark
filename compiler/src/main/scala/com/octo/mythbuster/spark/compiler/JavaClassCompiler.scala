@@ -8,7 +8,7 @@ import scala.util.Try
 
 class JavaClassCompilerException(message: String = null, cause: Throwable = null) extends Exception(message, cause)
 
-case class JavaClassSource[T](name: JavaClassName, code: JavaClassCode) {
+case class JavaClassSource(name: JavaClassName, code: JavaClassCode) {
 
   def writeCodeTo(folderPath: Path): Try[Path] = {
     val packageName = name.split("\\.").dropRight(1).mkString(".")
@@ -26,13 +26,13 @@ case class JavaClassSource[T](name: JavaClassName, code: JavaClassCode) {
     }
   }
 
-  def compile()(implicit javaClassCompiler: JavaClassCompiler) = javaClassCompiler.compile(this)
+  def compile()(implicit javaClassCompiler: JavaClassCompiler): Try[Class[_]] = javaClassCompiler.compile(this)
 
 }
 
 trait JavaClassCompiler {
 
-  def compile(javaClassSpec: JavaClassSource[_]): Try[Class[_]]
+  def compile(javaClassSpec: JavaClassSource): Try[Class[_]]
 
 }
 

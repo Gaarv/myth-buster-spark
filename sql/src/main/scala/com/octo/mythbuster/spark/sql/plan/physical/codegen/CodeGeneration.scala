@@ -1,29 +1,26 @@
 package com.octo.mythbuster.spark.sql.plan.physical.codegen
 
-import scala.collection.JavaConverters._
-import com.octo.mythbuster.spark.Logging
-import com.octo.mythbuster.spark.sql.plan.{physical => p}
-import com.octo.mythbuster.spark.{tree => t}
-import com.octo.mythbuster.spark.sql.plan.physical.PhysicalPlan
-import com.octo.mythbuster.spark.sql.plan.physical.codegen.Implicits._
-import com.octo.mythbuster.spark.compiler._
+import scala.util.{Failure, Success}
+import scala.collection.{Iterator => ScalaIterator}
 import java.util.{Iterator => JavaIterator}
 
-import com.octo.mythbuster.spark.sql.plan.physical.codegen.spi.{ CodeGeneratedInternalRowIterator, InternalRow => JavaInternalRow }
+import com.octo.mythbuster.spark.{Caching, Logging, tree => t}
+import com.octo.mythbuster.spark.compiler._
+import com.octo.mythbuster.spark.sql.plan.{physical => p}
+import com.octo.mythbuster.spark.sql.plan.physical.codegen.wrapper.{CodeGeneratedInternalRowIterator, InternalRow => JavaInternalRow}
 import com.octo.mythbuster.spark.sql.plan.physical.{InternalRow => ScalaInternalRow}
+import Implicits._
 
-import scala.util.{Failure, Success}
+case class CodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with t.UnaryTreeNode[p.PhysicalPlan] with CodeGenerationSupport with Logging with Caching[JavaClassSource, Iterator[p.InternalRow]] {
 
-case class CodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with t.UnaryTreeNode[p.PhysicalPlan] with CodeGenerationSupport with Logging {
-
-  def generateCode(): Code = {
+  def generateMethodCode(): Code = {
     val codeGenerationContext = CodeGenerationContext()
     val generatedCode = child.asInstanceOf[CodeGenerationSupport].produceCode(codeGenerationContext, this)
     generatedCode
   }
 
-  def execute(): Iterator[p.InternalRow] = {
-    val code = generateCode()
+  def generateClassSource(): JavaClassSource = {
+    val methodCode = generateMethodCode()
 
     val packageName = "octo.sql.physical.codegen.impl"
     val classSimpleName = "CodeGeneratedInternalRowIteratorImpl"
@@ -35,9 +32,9 @@ case class CodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with t.U
         |import java.util.Iterator;
         |import java.io.IOException;
         |import java.util.Map;
-        |import octo.sql.plan.physical.codegen.spi.CodeGeneratedInternalRowIterator;
-        |import octo.sql.plan.physical.codegen.spi.InternalRow;
-        |import octo.sql.plan.physical.codegen.spi.TableNameAndColumnName;
+        |import com.octo.mythbuster.spark.sql.plan.physical.codegen.wrapper.CodeGeneratedInternalRowIterator;
+        |import com.octo.mythbuster.spark.sql.plan.physical.codegen.wrapper.InternalRow;
+        |import com.octo.mythbuster.spark.sql.plan.physical.codegen.wrapper.TableNameAndColumnName;
         |import java.util.LinkedList;
         |import java.util.HashMap;
         |import java.util.Optional;
@@ -51,7 +48,7 @@ case class CodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with t.U
         |
         |   @Override
         |   protected void doContinue() {
-        |     ${code}
+        |     ${methodCode}
         |   }
         |
         |}
@@ -61,9 +58,15 @@ case class CodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with t.U
       s"${index} ${line}"
     }).mkString("\n"))
 
-    JavaClassSource(className, classCode).compile() match {
-      case Success(generatedClass) => newInstanceOfGeneratedClass(generatedClass, child.asInstanceOf[CodeGenerationSupport].inputRows)
-      case Failure(e) => throw e
+    JavaClassSource(className, classCode)
+  }
+
+  def execute(): Iterator[p.InternalRow] = {
+    cache.get(generateClassSource()) { classSource =>
+      classSource.compile() match {
+        case Success(generatedClass) => newInstanceOfGeneratedClass(generatedClass, child.asInstanceOf[CodeGenerationSupport].inputRows)
+        case Failure(e) => throw e
+      }
     }
   }
 
@@ -81,9 +84,15 @@ case class CodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with t.U
      """.stripMargin.trim
   }
 
-  protected def newInstanceOfGeneratedClass(generatedClass: Class[_], childRows: Iterator[ScalaInternalRow]): Iterator[ScalaInternalRow] = {
+  protected def newInstanceOfGeneratedClass(generatedClass: Class[_], childRows: ScalaIterator[ScalaInternalRow]): ScalaIterator[ScalaInternalRow] = {
     val constructor = generatedClass.getConstructor(classOf[JavaIterator[JavaInternalRow]])
     constructor.newInstance(childRows.wrapForJava).asInstanceOf[CodeGeneratedInternalRowIterator].unwrapForScala
   }
+
+  def explain(indent: Int = 0): String = {
+    child.explain(indent)
+  }
+
+  override def internalFields = child.internalFields
 
 }

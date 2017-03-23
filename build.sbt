@@ -28,5 +28,5 @@ lazy val sql = (project in file("sql"))
   .settings(commonSettings)
   .settings(name := "spark-sql")
   .settings(libraryDependencies ++= Dependencies.Parsing)
-  .dependsOn(common % "test->test,compile->compile")
+  .dependsOn(common % "test->test,compile->compile", compiler)
 

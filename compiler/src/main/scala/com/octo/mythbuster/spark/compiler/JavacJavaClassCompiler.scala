@@ -8,18 +8,18 @@ import scala.util.{ Failure, Success, Try }
 
 object JavacJavaClassCompiler extends JavaClassCompiler {
 
-  override def compile(javaClassSpec: JavaClassSource[_]): Try[Class[_]] = {
+  override def compile(javaClassSource: JavaClassSource): Try[Class[_]] = {
     val classFolderPath = Files.createTempDirectory("generated-classes")
     val sourceFolderPath = Files.createTempDirectory("generated-sources")
 
     for {
-      sourceFilePath <- javaClassSpec.writeCodeTo(sourceFolderPath)
+      sourceFilePath <- javaClassSource.writeCodeTo(sourceFolderPath)
       _ <- javac(sourceFilePath, classFolderPath)
-      loadedClass <- loadClass(javaClassSpec, classFolderPath)
+      loadedClass <- loadClass(javaClassSource, classFolderPath)
     } yield loadedClass
   }
 
-  def loadClass(javaClassSpec: JavaClassSource[_], classFolderPath: Path): Try[Class[_]] = {
+  def loadClass(javaClassSpec: JavaClassSource, classFolderPath: Path): Try[Class[_]] = {
     Try {
       val parentClassLoader = getClass.getClassLoader
       val classFolderURL = classFolderPath.toUri.toURL

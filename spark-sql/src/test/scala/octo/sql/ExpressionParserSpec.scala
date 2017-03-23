@@ -8,7 +8,7 @@ class ExpressionParserSpec extends UnitSpec {
 
     val parsedAST = (for {
       tokens <- Lexer("(t1.c1 = t2.c2)")
-      _ = println(tokens)
+      //_ = println(tokens)
       ast <- Parser(tokens)
     } yield ast)
 

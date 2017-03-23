@@ -1,5 +1,7 @@
 package com.octo.mythbuster.spark.sql.plan.physical.codegen
 
+import com.octo.mythbuster.spark.sql.plan.{ physical => p }
+
 trait CodeGenerationSupport {
 
   val child: p.PhysicalPlan

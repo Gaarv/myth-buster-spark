@@ -1,12 +1,13 @@
 package com.octo.mythbuster.spark.sql
 
-import com.octo.mythbuster.spark.sql.plan.physical.{ PhysicalPlan, PhysicalPlanOptimizer }
 import com.octo.mythbuster.spark.sql.parser.Parser
 import com.octo.mythbuster.spark.sql.lexer.Lexer
+import com.octo.mythbuster.spark.sql.plan.physical.{ PhysicalPlan, PhysicalPlanOptimizer }
 import com.octo.mythbuster.spark.sql.plan.logical.{ LogicalPlan, LogicalPlanOptimizer }
 import com.octo.mythbuster.spark.sql.plan.QueryPlanner
+import com.octo.mythbuster.spark.sql.plan.physical._
 
-import scala.util.{ Failure, Success, Try }
+import scala.util.{ Try }
 
 object Query {
 
@@ -17,7 +18,7 @@ object Query {
     optimizedLogicalPlan = LogicalPlanOptimizer.optimizePlan(logicalPlan)
     physicalPlan <- QueryPlanner.planQuery(optimizedLogicalPlan)
     optimizedPhysicalPlan = PhysicalPlanOptimizer.optimizePlan(physicalPlan)
-    _ = println(optimizedPhysicalPlan)
+    //_ = println(optimizedPhysicalPlan)
   } yield new Query(optimizedPhysicalPlan, tableRegistry)
 
 }
@@ -25,5 +26,7 @@ object Query {
 class Query(physicalPlan: PhysicalPlan, tableRegistry: TableRegistry) {
 
   def fetch(): Iterator[Row] = physicalPlan.execute().map(_.toRow)
+
+  def explain(): String = physicalPlan.explain()
 
 }

@@ -19,7 +19,7 @@ object QueryPlanner {
       case Failure(e) => throw e
     }
     case _ => throw new IllegalArgumentException(s"Unable to plan query because ${logicalPlan} needs to be a projection")
-  }//.map(optimize)
+  }
 
   def planQuery(logicalPlan: l.LogicalPlan)(implicit tableRegistry: TableRegistry): Try[p.PhysicalPlan] = Try {
     doPlanQuery(logicalPlan)

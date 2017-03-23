@@ -6,6 +6,9 @@ import scala.util.parsing.combinator.Parsers
 import scala.util.parsing.input.{NoPosition, Position, Reader}
 import scala.language.postfixOps
 
+import com.octo.mythbuster.spark.sql.{ expression => e }
+import com.octo.mythbuster.spark.sql.{ lexer => l }
+
 // https://en.wikipedia.org/wiki/LR_parser
 // https://gist.github.com/kishida/1345875
 // https://github.com/stephentu/scala-sql-parser/blob/master/src/main/scala/parser.scala
@@ -44,7 +47,7 @@ object Parser extends Parsers {
 
   def expression = or
 
-  def tableColumn = { identifier ~ l.Dot() ~ identifier } ^^ { case l.Identifier(tableName) ~ _ ~ l.Identifier(columnName) => TableColumn(tableName, columnName) }
+  def tableColumn = { identifier ~ l.Dot() ~ identifier } ^^ { case l.Identifier(tableName) ~ _ ~ l.Identifier(columnName) => e.TableColumn(tableName, columnName) }
 
   def identifier = { accept("identifier", { case identifier @ l.Identifier(_) => identifier }) }
 

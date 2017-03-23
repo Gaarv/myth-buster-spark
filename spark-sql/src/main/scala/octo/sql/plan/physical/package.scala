@@ -6,9 +6,9 @@ package object physical {
 
   type InternalRow = Map[(Option[TableName], ColumnName), Any]
 
-  implicit class PhysicalRowImplicits(physicalRow: InternalRow) {
+  implicit class InternalRowImplicits(internalRow: InternalRow) {
 
-    def toRow: Row = physicalRow.map({ case ((tableName, columnName), value) => (tableName.map(n => s"${n}.").getOrElse("") + columnName, value)})
+    def toRow: Row = internalRow.map({ case ((tableName, columnName), value) => (tableName.map(n => s"${n}.").getOrElse("") + columnName, value)})
 
   }
 

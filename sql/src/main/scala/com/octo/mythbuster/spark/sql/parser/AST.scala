@@ -1,10 +1,8 @@
 package com.octo.mythbuster.spark.sql.parser
 
+import com.octo.mythbuster.spark.sql.ColumnName
 import com.octo.mythbuster.spark.sql.expression.Expression
 
-/**
-  * https://github.com/stephentu/scala-sql-parser/blob/master/src/main/scala/ast.scala
-  */
 trait AST
 
 trait Relation extends AST

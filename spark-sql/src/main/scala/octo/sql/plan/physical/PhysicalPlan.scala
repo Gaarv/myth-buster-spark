@@ -41,9 +41,9 @@ case class CartesianProduct(leftChild: PhysicalPlan, rightChild: PhysicalPlan) e
 
 case class Projection(child: PhysicalPlan, expressions : Seq[e.Expression]) extends PhysicalPlan with t.UnaryTreeNode[PhysicalPlan] with c.CodeGenerationSupport {
 
-  def execute(): Iterator[InternalRow] = child.execute().map({ physicalRow: InternalRow =>
+  def execute(): Iterator[InternalRow] = child.execute().map({ internalRow: InternalRow =>
     Map(expressions.zipWithIndex.map({ case (expression: e.Expression, index: Int) =>
-      val value = expression.evaluate(physicalRow)
+      val value = expression.evaluate(internalRow)
       (expression match {
         case e.NamedExpression(expressionName) => (None, expressionName)
         case _ => (None, s"column_${index}")

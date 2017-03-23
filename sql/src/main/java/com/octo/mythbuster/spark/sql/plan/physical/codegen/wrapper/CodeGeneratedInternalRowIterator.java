@@ -1,4 +1,4 @@
-package com.octo.mythbuster.spark.sql.plan.physical.codegen.spi;
+package com.octo.mythbuster.spark.sql.plan.physical.codegen.wrapper;
 
 import com.google.common.collect.Lists;
 
