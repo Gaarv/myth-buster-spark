@@ -4,7 +4,7 @@ package object sample {
 
   case class Car(id: Int, name: String, companyID: Int)
 
-  def tableOfCar = table[Car]("cars", Seq("id", "name", "company_id")) { case Car(id, name, companyID) => Map("id" -> id, "name" -> name, "company_id" -> companyID) }
+  def tableOfCar = table[Car]("cars") { case Car(id, name, companyID) => Map("id" -> id, "name" -> name, "company_id" -> companyID) }
 
   val cars = Seq(
     Car(1, "Twingo", 1),
@@ -15,13 +15,13 @@ package object sample {
 
   case class Company(id: Int, name: String)
 
-  def tableOfCompany = table[Company]("companies", Seq("id", "name")) { case Company(id, name) => Map("id" -> id, "name" -> name) }
+  def tableOfCompany = table[Company]("companies") { case Company(id, name) => Map("id" -> id, "name" -> name) }
 
   val companies = Seq(
     Company(1, "Renault"),
     Company(2, "Toyota")
   )
 
-  implicit val tableRegistry: TableRegistry = /*tableOfCar(cars) ++ */tableOfCompany(companies)
+  implicit val rowIterableRegistry: RowIterableRegistry = /*tableOfCar(cars) ++ */tableOfCompany(companies)
 
 }

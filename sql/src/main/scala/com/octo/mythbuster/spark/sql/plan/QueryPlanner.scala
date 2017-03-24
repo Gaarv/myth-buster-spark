@@ -9,7 +9,7 @@ import scala.util.{Failure, Success, Try}
 
 object QueryPlanner {
 
-  protected def doPlanQuery(logicalPlan: l.LogicalPlan)(implicit tableRegistry: TableRegistry): p.PhysicalPlan = logicalPlan match {
+  protected def doPlanQuery(logicalPlan: l.LogicalPlan)(implicit rowIterableRegistry: RowIterableRegistry): p.PhysicalPlan = logicalPlan match {
     case l.Projection(child, expressions) => p.Projection(doPlanQuery(child), expressions)
     case l.CartesianProduct(leftChild, rightChild) => p.CartesianProduct(doPlanQuery(leftChild), doPlanQuery(rightChild))
 
@@ -17,8 +17,8 @@ object QueryPlanner {
 
     case l.TableScan(tableName: TableName, aliasName: Option[RelationName]) => {
       val qualifierName = aliasName.getOrElse(tableName)
-      tableRegistry.getTableByName(tableName) match {
-        case Success((_, table)) => p.IterableFullScan(qualifierName, table)
+      rowIterableRegistry.getRowIterableByName(tableName) match {
+        case Success(iterable) => p.IterableFullScan(qualifierName, iterable)
         case Failure(e) => {
           Option(Resources.getResource(s"${tableName}.csv")) match {
             case Some(csvFileURL) => p.CSVFileFullScan(qualifierName, csvFileURL)
@@ -30,7 +30,7 @@ object QueryPlanner {
     case _ => throw new IllegalArgumentException(s"Unable to plan query because ${logicalPlan} needs to be a projection")
   }
 
-  def planQuery(logicalPlan: l.LogicalPlan)(implicit tableRegistry: TableRegistry): Try[p.PhysicalPlan] = Try {
+  def planQuery(logicalPlan: l.LogicalPlan)(implicit rowIterableRegistry: RowIterableRegistry): Try[p.PhysicalPlan] = Try {
     doPlanQuery(logicalPlan)
   }
 

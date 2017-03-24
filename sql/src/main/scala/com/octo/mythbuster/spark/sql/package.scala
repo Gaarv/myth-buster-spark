@@ -21,33 +21,24 @@ package object sql {
 
   type Row = Map[ColumnName, Any]
 
-  type Table = (Seq[ColumnName], Iterable[Row])
+  type RowIterable = Iterable[Row]
 
-  type TableRegistry = Map[TableName, Table]
+  type RowIterableRegistry = Map[TableName, RowIterable]
 
-  implicit class TableRegistryImplicits(tableRegistry: TableRegistry) {
+  implicit class IterableRegistryImplicits(rowIterableRegistry: RowIterableRegistry) {
 
-    def getTableByName(tableName: TableName): Try[Table] = tableRegistry.get(tableName).toTry(s"Unable to find the table named ${tableName}")
+    def getRowIterableByName(iterableName: TableName): Try[RowIterable] = rowIterableRegistry.get(iterableName).toTry(s"Unable to find the iterable named ${iterableName}")
 
   }
 
   implicit class RowImplicits(row: Row) {
 
-    def toInternalRow(tableName: TableName): InternalRow = row.map({ case (columnName, value) => ((Some(tableName), columnName), value) })
+    def toInternalRow(relationName: RelationName): InternalRow = row.map({ case (columnName, value) => ((Some(relationName), columnName), value) })
 
   }
 
-  implicit class TableImplicits(table: Table) {
-
-    def columnNames: Seq[ColumnName] = {
-      val (names, _) = table
-      names
-    }
-
-  }
-
-  def table[A](tableName: String, columnNames: Seq[String])(func: A => Map[ColumnName, Any]): Iterable[A] => Map[TableName, Table] = { iterable: Iterable[A] =>
-    Map(tableName -> (columnNames, iterable.map({ a => func(a) })))
+  def table[A](tableName: String)(func: A => Map[ColumnName, Any]): Iterable[A] => Map[RelationName, RowIterable] = { iterable: Iterable[A] =>
+    Map(tableName -> iterable.map({ a => func(a) }))
   }
 
 }

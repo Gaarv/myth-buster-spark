@@ -154,16 +154,16 @@ case class Or(leftChild: Expression, rightChild: Expression) extends BinaryOpera
 
 }
 
-case class TableColumn(tableName: TableName, columnName: ColumnName) extends Expression with NamedExpression {
+case class TableColumn(relationName: RelationName, columnName: ColumnName) extends Expression with NamedExpression {
 
   override type Type = Any
 
   val name = columnName
 
-  override def evaluate(row: InternalRow): Type = row((Some(tableName), columnName))
+  override def evaluate(row: InternalRow): Type = row((Some(relationName), columnName))
 
   override def generateCode(javaVariableName: String): String = {
-    s"""${javaVariableName}.getValue(TableNameAndColumnName.of(Optional.of("${tableName}"), "${columnName}"))"""
+    s"""${javaVariableName}.getValue(TableNameAndColumnName.of(Optional.of("${relationName}"), "${columnName}"))"""
   }
 
 }
