@@ -1,5 +1,0 @@
-PhysicalPlan(
-    EvaluatedProjection(
-    Filter(
-        Filter(CartesianProduct(TableScan(cars,List(Map(id -> 1, name -> Twingo, company_id -> 1), Map(id -> 2, name -> Clio, company_id -> 1), Map(id -> 3, name -> Prius, company_id -> 2), Map(id -> 4, name -> Celica, company_id -> 2))),TableScan(companies,List(Map(id -> 1, name -> Renault), Map(id -> 2, name -> Toyota)))),Equal(TableColumn(cars,company_id),TableColumn(companies,id))),
-        Equal(TableColumn(companies,name),Text(Toyota))),List(TableColumn(cars,name))))
