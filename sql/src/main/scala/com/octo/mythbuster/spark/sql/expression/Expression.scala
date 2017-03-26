@@ -1,7 +1,7 @@
 package com.octo.mythbuster.spark.sql.expression
 
 import com.octo.mythbuster.spark.sql._
-import com.octo.mythbuster.spark.sql.plan.physical.{InternalField, InternalRow}
+import com.octo.mythbuster.spark.sql.plan.physical.{InternalRow}
 import com.octo.mythbuster.spark.sql.parser.AST
 
 import scala.reflect.runtime.universe._

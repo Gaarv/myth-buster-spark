@@ -54,7 +54,7 @@ case class CSVFileFullScan(qualifierName: QualifierName, csvFileURL: URL) extend
 case class IterableFullScan(qualifierName: QualifierName, iterable: Iterable[Row]) extends PhysicalPlan with t.LeafTreeNode[PhysicalPlan] {
 
   override def execute(): Iterator[InternalRow] = {
-    iterable.iterator.map(_.toInternalRow(qualifierName))
+    iterable.iterator.map({ t => println("YOLO"); t}).map(_.toInternalRow(qualifierName))
   }
 
   override def explain(indent: Int = 0): String = {
