@@ -17,17 +17,15 @@ package object sql {
 
   type ColumnName = Name
 
-  type TableName = Name
-
   type Row = Map[ColumnName, Any]
 
   type RowIterable = Iterable[Row]
 
-  type RowIterableRegistry = Map[TableName, RowIterable]
+  type RowIterableRegistry = Map[Name, RowIterable]
 
   implicit class IterableRegistryImplicits(rowIterableRegistry: RowIterableRegistry) {
 
-    def getRowIterableByName(iterableName: TableName): Try[RowIterable] = rowIterableRegistry.get(iterableName).toTry(s"Unable to find the iterable named ${iterableName}")
+    def getRowIterableByName(iterableName: Name): Try[RowIterable] = rowIterableRegistry.get(iterableName).toTry(s"Unable to find the iterable named ${iterableName}")
 
   }
 

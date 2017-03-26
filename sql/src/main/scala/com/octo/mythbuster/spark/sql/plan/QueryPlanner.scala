@@ -15,7 +15,7 @@ object QueryPlanner {
 
     case l.Filter(child, expression: e.Expression) => p.Filter(doPlanQuery(child), expression)
 
-    case l.TableScan(tableName: TableName, aliasName: Option[RelationName]) => {
+    case l.TableScan(tableName: l.TableName, aliasName: Option[RelationName]) => {
       val qualifierName = aliasName.getOrElse(tableName)
       rowIterableRegistry.getRowIterableByName(tableName) match {
         case Success(iterable) => p.IterableFullScan(qualifierName, iterable)

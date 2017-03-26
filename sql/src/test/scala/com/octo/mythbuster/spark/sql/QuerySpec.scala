@@ -32,9 +32,21 @@ class QuerySpec extends UnitSpec {
     }
   }
 
-  it should "return only 2 rows" in {
+  it should "return only 2 rows with code generation" in {
     query match {
       case Success(query) => {
+        val result = query.fetch().toSeq
+        result.length should be(2)
+      }
+      case Failure(e) => fail(e)
+    }
+  }
+
+  it should "also return only 2 rows without code generation" in {
+    query match {
+      case Success(query) => {
+        val queryWithoutCodeGeneration = query
+
         val result = query.fetch().toSeq
         result.length should be(2)
       }

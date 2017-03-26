@@ -2,7 +2,7 @@ package com.octo.mythbuster.spark.sql.plan.logical
 
 import com.octo.mythbuster.spark.sql.plan.Plan
 import com.octo.mythbuster.spark.{tree => t}
-import com.octo.mythbuster.spark.sql.{RelationName, TableName, expression => e, parser => p}
+import com.octo.mythbuster.spark.sql.{ RelationName, expression => e, parser => p }
 
 import scala.util.{Failure, Success, Try}
 

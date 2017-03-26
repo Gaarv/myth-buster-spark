@@ -1,12 +1,14 @@
 package com.octo.mythbuster.spark.sql.plan
 
-import com.octo.mythbuster.spark.sql.{ColumnName, RelationName, Row, TableName}
+import com.octo.mythbuster.spark.sql.{ ColumnName, Name, Row }
 
 package object physical {
 
-  type InternalField = (Option[RelationName], ColumnName)
+  type RelationName = Name
 
-  type InternalRow = Map[InternalField, Any]
+  type InternalColumn = (Option[RelationName], ColumnName)
+
+  type InternalRow = Map[InternalColumn, Any]
 
   implicit class InternalRowImplicits(internalRow: InternalRow) {
 
