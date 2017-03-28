@@ -1,6 +1,6 @@
 package com.octo.mythbuster.spark.sql.plan.physical.codegen
 
-case class CodeGenerationContext() {
+case class JavaCodeGenerationContext() {
 
   private var variableCount = 0
 

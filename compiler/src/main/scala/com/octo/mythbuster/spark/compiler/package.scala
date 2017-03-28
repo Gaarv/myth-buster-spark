@@ -4,6 +4,8 @@ package object compiler {
 
   type JavaClassName = String
 
-  type JavaClassCode = String
+  type JavaCode = String
+
+  type JavaClassCode = JavaCode
 
 }

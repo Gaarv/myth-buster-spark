@@ -9,10 +9,11 @@ import com.google.common.io.Resources
 import scala.util.{Failure, Success}
 import com.octo.mythbuster.spark.sql._
 import com.octo.mythbuster.spark.sql.plan.Plan
-import com.octo.mythbuster.spark.sql.plan.physical.codegen.CodeGenerationSupport
+import com.octo.mythbuster.spark.sql.plan.physical.codegen.JavaCodeGenerationSupport
 import com.octo.mythbuster.spark.sql.{expression => e}
 import com.octo.mythbuster.spark.sql.plan.physical.{codegen => c}
 import com.octo.mythbuster.spark.{tree => t}
+import com.octo.mythbuster.spark.compiler.JavaCode
 
 // A PhysicalPlan modelize each stage which will be executed during the execution of the query
 trait PhysicalPlan extends Plan[PhysicalPlan] with t.TreeNode[PhysicalPlan] {
@@ -22,7 +23,7 @@ trait PhysicalPlan extends Plan[PhysicalPlan] with t.TreeNode[PhysicalPlan] {
   def explain(indent: Int = 0): String
 
   def supportCodeGeneration(): Boolean = {
-    this.isInstanceOf[CodeGenerationSupport]
+    this.isInstanceOf[JavaCodeGenerationSupport]
   }
 
 }
@@ -65,7 +66,7 @@ case class IterableFullScan(qualifierName: QualifierName, iterable: Iterable[Row
 }
 
 // This will filter internal rows which does not fulfill the expression (which should be a predicate)
-case class Filter(child: PhysicalPlan, expression: e.Expression) extends PhysicalPlan with c.CodeGenerationSupport with t.UnaryTreeNode[PhysicalPlan] {
+case class Filter(child: PhysicalPlan, expression: e.Expression) extends PhysicalPlan with JavaCodeGenerationSupport with t.UnaryTreeNode[PhysicalPlan] {
 
   override def execute() : Iterator[InternalRow] = {
     expression.toPredicate match {
@@ -79,9 +80,9 @@ case class Filter(child: PhysicalPlan, expression: e.Expression) extends Physica
        |${child.explain(indent + 1)}""".stripMargin
   }
 
-  override def doConsumeCode(codeGenerationContext: c.CodeGenerationContext, variableName: c.Code): c.Code = {
+  override def doConsumeJavaCode(codeGenerationContext: c.JavaCodeGenerationContext, variableName: JavaCode): JavaCode = {
     s"""if(!(${expression.generateCode(variableName)})) continue;
-       |${consumeCode(codeGenerationContext, variableName)}""".stripMargin
+       |${consumeJavaCode(codeGenerationContext, variableName)}""".stripMargin
   }
 
 }
@@ -103,7 +104,7 @@ case class CartesianProduct(leftChild: PhysicalPlan, rightChild: PhysicalPlan) e
 }
 
 // The projection will map the InternalRows by applying the expressions
-case class Projection(child: PhysicalPlan, expressions : Seq[e.Expression]) extends PhysicalPlan with t.UnaryTreeNode[PhysicalPlan] with c.CodeGenerationSupport {
+case class Projection(child: PhysicalPlan, expressions : Seq[e.Expression]) extends PhysicalPlan with t.UnaryTreeNode[PhysicalPlan] with JavaCodeGenerationSupport {
 
   def execute(): Iterator[InternalRow] = child.execute().map({ internalRow: InternalRow =>
     Map(expressions.zipWithIndex.map({ case (expression: e.Expression, index: Int) =>
@@ -121,7 +122,7 @@ case class Projection(child: PhysicalPlan, expressions : Seq[e.Expression]) exte
        |${child.explain(indent + 1)}""".stripMargin
   }
 
-  override def doConsumeCode(codeGenerationContext: c.CodeGenerationContext, variableName: c.Code): c.Code = {
+  override def doConsumeJavaCode(codeGenerationContext: c.JavaCodeGenerationContext, variableName: JavaCode): JavaCode = {
     val internalRowWithProjection = codeGenerationContext.freshVariableName()
     val arrayVariableName = codeGenerationContext.freshVariableName()
     s"""Object ${arrayVariableName}[] = {

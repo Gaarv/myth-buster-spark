@@ -11,16 +11,16 @@ import com.octo.mythbuster.spark.sql.plan.physical.codegen.wrapper.{CodeGenerate
 import com.octo.mythbuster.spark.sql.plan.physical.{InternalRow => ScalaInternalRow}
 import Implicits._
 
-case class CodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with t.UnaryTreeNode[p.PhysicalPlan] with CodeGenerationSupport with Logging with Caching[JavaClassSource, Iterator[p.InternalRow]] {
+case class JavaCodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with t.UnaryTreeNode[p.PhysicalPlan] with JavaCodeGenerationSupport with Logging with Caching[JavaClassSource, Iterator[p.InternalRow]] {
 
-  def generateMethodCode(): Code = {
-    val codeGenerationContext = CodeGenerationContext()
-    val generatedCode = child.asInstanceOf[CodeGenerationSupport].produceCode(codeGenerationContext, this)
+  def generateJavaCode(): JavaCode = {
+    val codeGenerationContext = JavaCodeGenerationContext()
+    val generatedCode = child.asInstanceOf[JavaCodeGenerationSupport].produceJavaCode(codeGenerationContext, this)
     generatedCode
   }
 
   def generateClassSource(): JavaClassSource = {
-    val methodCode = generateMethodCode()
+    val methodCode = generateJavaCode()
 
     val packageName = "octo.sql.physical.codegen.impl"
     val classSimpleName = "CodeGeneratedInternalRowIteratorImpl"
@@ -64,13 +64,13 @@ case class CodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with t.U
   def execute(): Iterator[p.InternalRow] = {
     cache.get(generateClassSource()) { classSource =>
       classSource.compile() match {
-        case Success(generatedClass) => newInstanceOfGeneratedClass(generatedClass, child.asInstanceOf[CodeGenerationSupport].inputRows)
+        case Success(generatedClass) => newInstanceOfGeneratedClass(generatedClass, child.asInstanceOf[JavaCodeGenerationSupport].inputRows)
         case Failure(e) => throw e
       }
     }
   }
 
-  override protected def doProduceCode(codeGenerationContext: CodeGenerationContext) = {
+  override protected def doProduceJavaCode(codeGenerationContext: JavaCodeGenerationContext) = {
     throw new UnsupportedOperationException("This method is not implemented! ")
   }
 
@@ -78,7 +78,7 @@ case class CodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with t.U
     throw new UnsupportedOperationException("This method is not implemented! ")
   }
 
-  override def doConsumeCode(codeGenerationContext: CodeGenerationContext, rowVariableName: Code): Code = {
+  override def doConsumeJavaCode(codeGenerationContext: JavaCodeGenerationContext, rowVariableName: JavaCode): JavaCode = {
     s"""
        |append(${rowVariableName});
      """.stripMargin.trim
