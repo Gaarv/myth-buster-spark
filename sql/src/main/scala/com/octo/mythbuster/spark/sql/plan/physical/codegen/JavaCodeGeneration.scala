@@ -26,36 +26,35 @@ case class JavaCodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with
     val classSimpleName = "CodeGeneratedInternalRowIteratorImpl"
     val className = s"${packageName}.${classSimpleName}"
     val classCode =
-      s"""
-        |package ${packageName};
-        |
-        |import java.util.Iterator;
-        |import java.io.IOException;
-        |import java.util.Map;
-        |import com.octo.mythbuster.spark.sql.plan.physical.codegen.wrapper.CodeGeneratedInternalRowIterator;
-        |import com.octo.mythbuster.spark.sql.plan.physical.codegen.wrapper.InternalRow;
-        |import com.octo.mythbuster.spark.sql.plan.physical.codegen.wrapper.TableNameAndColumnName;
-        |import java.util.LinkedList;
-        |import java.util.HashMap;
-        |import java.util.Optional;
-        |
-        |
-        |public class $classSimpleName extends CodeGeneratedInternalRowIterator {
-        |
-        |   public $classSimpleName(Iterator<InternalRow> childRows) {
-        |     super(childRows);
-        |   }
-        |
-        |   @Override
-        |   protected void doContinue() {
-        |     ${methodCode}
-        |   }
-        |
-        |}
+      s"""package ${packageName};
+         |
+         |import java.util.Iterator;
+         |import java.io.IOException;
+         |import java.util.Map;
+         |import com.octo.mythbuster.spark.sql.plan.physical.codegen.wrapper.CodeGeneratedInternalRowIterator;
+         |import com.octo.mythbuster.spark.sql.plan.physical.codegen.wrapper.InternalRow;
+         |import com.octo.mythbuster.spark.sql.plan.physical.codegen.wrapper.TableNameAndColumnName;
+         |import java.util.LinkedList;
+         |import java.util.HashMap;
+         |import java.util.Optional;
+         |
+         |
+         |public class $classSimpleName extends CodeGeneratedInternalRowIterator {
+         |
+         |   public $classSimpleName(Iterator<InternalRow> childRows) {
+         |     super(childRows);
+         |   }
+         |
+         |   @Override
+         |   protected void doContinue() {
+         |     ${methodCode}
+         |   }
+         |
+         |}
       """.stripMargin
 
     logger.debug("classCode={}", classCode.split("\n").zipWithIndex.map({ case (line, index) =>
-      s"${index} ${line}"
+      s"/* ${index} */ ${line}"
     }).mkString("\n"))
 
     JavaClassSource(className, classCode)
