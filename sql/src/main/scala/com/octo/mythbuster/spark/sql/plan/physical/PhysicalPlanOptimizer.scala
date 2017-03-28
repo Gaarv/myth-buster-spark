@@ -5,10 +5,16 @@ import com.octo.mythbuster.spark.sql.plan.physical.codegen.GenerateCode
 import com.octo.mythbuster.spark.sql.plan.physical.rules._
 import com.typesafe.config.Config
 
-object PhysicalPlanOptimizer extends PlanOptimizer[PhysicalPlan] {
+object PhysicalPlanOptimizer {
 
-  private def generateCodeRule(implicit config: Config) = if (config.getBoolean("generateCode")) Seq(GenerateCode) else Seq()
+  def apply(config: Config) = new PhysicalPlanOptimizer(config)
 
-  override def rules(implicit config: Config): Seq[Rule[PhysicalPlan]] = Nil//generateCodeRule ++ Nil
+}
+
+class PhysicalPlanOptimizer(val config: Config) extends PlanOptimizer[PhysicalPlan] {
+
+  private def generateCodeRule(shouldGeneratedCode: Boolean) = if (shouldGeneratedCode) Seq(GenerateCode) else Nil
+
+  override def rules: Seq[Rule[PhysicalPlan]] = generateCodeRule(config.getBoolean("shouldGenerateCode")) ++ Nil
 
 }

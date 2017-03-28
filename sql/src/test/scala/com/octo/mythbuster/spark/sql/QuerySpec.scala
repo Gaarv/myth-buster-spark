@@ -8,8 +8,10 @@ class QuerySpec extends UnitSpec {
 
   import sample._
 
-  implicit val config = ConfigFactory.empty()
-    .withValue("generateCode", ConfigValueFactory.fromAnyRef(true))
+  def config(shouldGenerateCode: Boolean) = {
+    ConfigFactory.empty()
+      .withValue("shouldGenerateCode", ConfigValueFactory.fromAnyRef(shouldGenerateCode))
+  }
 
   val sql =
     """
@@ -25,10 +27,8 @@ class QuerySpec extends UnitSpec {
       |  co.name = 'Toyota'
     """.stripMargin
 
-  val query = Query(sql)
-
   "The query" should "produce a valid explain plan" in {
-    query match {
+    Query(sql, config(true)) match {
       case Success(query) => {
         println(query.explain())
       }
@@ -37,7 +37,7 @@ class QuerySpec extends UnitSpec {
   }
 
   it should "return only 2 rows with code generation" in {
-    query match {
+    Query(sql, config(true)) match {
       case Success(query) => {
         val result = query.fetch().toSeq
         result.foreach(println)
@@ -49,9 +49,9 @@ class QuerySpec extends UnitSpec {
 
   it should "also return only 2 rows without code generation" in {
     implicit val configWithoutCodeGeneration = ConfigFactory.empty()
-      .withValue("generateCode", ConfigValueFactory.fromAnyRef(false))
+      .withValue("shouldGenerateCode", ConfigValueFactory.fromAnyRef(false))
 
-    query match {
+    Query(sql, config(false)) match {
       case Success(query) => {
         println(query.physicalPlan)
 

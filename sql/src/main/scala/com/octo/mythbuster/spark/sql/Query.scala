@@ -1,6 +1,5 @@
 package com.octo.mythbuster.spark.sql
 
-import com.octo.mythbuster.spark.Configuring
 import com.octo.mythbuster.spark.sql.parser.Parser
 import com.octo.mythbuster.spark.sql.lexer.Lexer
 import com.octo.mythbuster.spark.sql.plan.physical.{PhysicalPlan, PhysicalPlanOptimizer}
@@ -13,13 +12,13 @@ import scala.util.Try
 
 object Query {
 
-  def apply(sql: String)(implicit config: Config = ConfigFactory.load(), rowIterableRegistry: RowIterableRegistry): Try[Query] = for {
+  def apply(sql: String, config: Config = ConfigFactory.load())(implicit rowIterableRegistry: RowIterableRegistry): Try[Query] = for {
     tokens <- Lexer(sql)
     ast <- Parser(tokens)
     logicalPlan <- LogicalPlan(ast)
     optimizedLogicalPlan = LogicalPlanOptimizer.optimizePlan(logicalPlan)
     physicalPlan <- QueryPlanner.planQuery(optimizedLogicalPlan)
-    optimizedPhysicalPlan = PhysicalPlanOptimizer.optimizePlan(physicalPlan)
+    optimizedPhysicalPlan = PhysicalPlanOptimizer(config).optimizePlan(physicalPlan)
     //_ = println(optimizedPhysicalPlan)
   } yield new Query(optimizedPhysicalPlan, rowIterableRegistry)
 
