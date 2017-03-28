@@ -81,7 +81,7 @@ case class Filter(child: PhysicalPlan, expression: e.Expression) extends Physica
   }
 
   override def doConsumeJavaCode(codeGenerationContext: c.JavaCodeGenerationContext, variableName: JavaCode): JavaCode = {
-    s"""if(!(${expression.generateCode(variableName)})) continue;
+    s"""if(!(${expression.generateJavaCode(variableName)})) continue;
        |${consumeJavaCode(codeGenerationContext, variableName)}""".stripMargin
   }
 
@@ -126,7 +126,7 @@ case class Projection(child: PhysicalPlan, expressions : Seq[e.Expression]) exte
     val internalRowWithProjection = codeGenerationContext.freshVariableName()
     val arrayVariableName = codeGenerationContext.freshVariableName()
     s"""Object ${arrayVariableName}[] = {
-      |  ${expressions.map(_.generateCode(variableName)).mkString(",\n")}
+      |  ${expressions.map(_.generateJavaCode(variableName)).mkString(",\n")}
       |};
       |InternalRow ${internalRowWithProjection} = InternalRow.create();
       |for(int index = 0; index < ${arrayVariableName}.length; index++) {

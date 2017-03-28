@@ -11,10 +11,12 @@ object PhysicalPlanOptimizer {
 
 }
 
+// We're not using a object only, because we need to externalize the config creation in order to control the Java code generation
 class PhysicalPlanOptimizer(val config: Config) extends PlanOptimizer[PhysicalPlan] {
 
-  private def generateCodeRule(shouldGeneratedCode: Boolean) = if (shouldGeneratedCode) Seq(GenerateJavaCode) else Nil
+  // The rule to generate Java code is enabled only if shouldGenerateCode=true
+  private def generateJavaCodeRule() = if (config.getBoolean("shouldGenerateCode")) Seq(GenerateJavaCode) else Nil
 
-  override def rules: Seq[Rule[PhysicalPlan]] = generateCodeRule(config.getBoolean("shouldGenerateCode")) ++ Nil
+  override def rules: Seq[Rule[PhysicalPlan]] = generateJavaCodeRule() ++ Nil
 
 }

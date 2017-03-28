@@ -7,7 +7,16 @@ import com.octo.mythbuster.spark.sql.plan.{logical => l, physical => p}
 
 import scala.util.{Failure, Success, Try}
 
+// The query planner transforms a logical plan into a physical plan
 object QueryPlanner {
+
+  /*
+    That's were we choose the actual source of the data
+      l.Projection -> p.Projection
+      l.CartesianProduct -> p.CartesianProduct
+      l.Filter -> p.Filter
+      l.TableScan -> Either CSVFileFullScan or IterableFullScan
+   */
 
   protected def doPlanQuery(logicalPlan: l.LogicalPlan)(implicit rowIterableRegistry: RowIterableRegistry): p.PhysicalPlan = logicalPlan match {
     case l.Projection(child, expressions) => p.Projection(doPlanQuery(child), expressions)

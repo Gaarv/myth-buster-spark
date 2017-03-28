@@ -1,12 +1,14 @@
 package com.octo.mythbuster.spark.sql.expression
 
+import com.octo.mythbuster.spark.compiler.JavaCode
 import com.octo.mythbuster.spark.sql._
-import com.octo.mythbuster.spark.sql.plan.physical.{InternalRow}
+import com.octo.mythbuster.spark.sql.plan.physical.InternalRow
 import com.octo.mythbuster.spark.sql.parser.AST
 
 import scala.reflect.runtime.universe._
 import scala.util.{Failure, Success, Try}
 
+// An Expression can be applied on an InternalRow in order to produce a Type
 trait Expression extends AST {
 
   type Type
@@ -17,10 +19,11 @@ trait Expression extends AST {
     Failure(new Exception(s"The ${this} expression is not a predicate"))
   }
 
-  def generateCode(javaVariableName: String): String
+  def generateJavaCode(javaVariableName: JavaCode): JavaCode
 
 }
 
+// A Predicate is a particular type of Expression which will produce a Boolean when applied on an InternalRow
 trait Predicate extends Expression {
 
   override type Type = Boolean
@@ -29,8 +32,10 @@ trait Predicate extends Expression {
 
 }
 
+// A NamedExpression can be any kind of Expression having a name
 object NamedExpression {
 
+  // This method is quite useful for pattern matching
   def unapply(expression: Expression): Option[ExpressionName] = {
     expression match {
       case namedExpression: NamedExpression => Some(namedExpression.name)
@@ -46,16 +51,18 @@ trait NamedExpression {
 
 }
 
+// Alias is a concret implementation of a NamedExpression (1 + 1 AS two)
 case class Alias(child: Expression, name: ExpressionName) extends UnaryOperation with NamedExpression {
 
   type Type = child.Type
 
   override def evaluate(row: InternalRow) = child.evaluate(row)
 
-  override def generateCode(javaVariableName: String) = child.generateCode(javaVariableName)
+  override def generateJavaCode(javaVariableName: JavaCode) = child.generateJavaCode(javaVariableName)
 
 }
 
+// And is a predicate which evaluate the &&
 case class And(leftChild: Expression, rightChild: Expression) extends BinaryOperation with Predicate {
 
   override val javaOperator: String = "&&"
@@ -94,12 +101,13 @@ trait BinaryOperation extends Expression {
 
   val javaOperator: String
 
-  override def generateCode(javaVariableName: String): String = {
-    s"(${leftChild.generateCode(javaVariableName)} ${javaOperator} ${rightChild.generateCode(javaVariableName)})"
+  override def generateJavaCode(javaVariableName: JavaCode): JavaCode = {
+    s"(${leftChild.generateJavaCode(javaVariableName)} ${javaOperator} ${rightChild.generateJavaCode(javaVariableName)})"
   }
 
 }
 
+// Equal evaluate the equality of its two children
 case class Equal(leftChild: Expression, rightChild: Expression) extends BinaryOperation with Predicate {
 
   override val javaOperator: String = "FIXME"
@@ -108,12 +116,14 @@ case class Equal(leftChild: Expression, rightChild: Expression) extends BinaryOp
     left.toString.equals(right.toString)
   }
 
-  override def generateCode(javaVariableName: String): String = {
-    s"((${leftChild.generateCode(javaVariableName)}).toString().equals((${rightChild.generateCode(javaVariableName)}).toString()))"
+  // Because of the Any type (as we did not make a real type system), we need to convert them to String in order to do the comparaison
+  override def generateJavaCode(javaVariableName: JavaCode): JavaCode = {
+    s"((${leftChild.generateJavaCode(javaVariableName)}).toString().equals((${rightChild.generateJavaCode(javaVariableName)}).toString()))"
   }
 
 }
 
+// Greater evaluate the >
 case class Greater(leftChild: Expression, rightChild: Expression) extends BinaryOperation with Predicate {
 
   override val javaOperator: String = ">"
@@ -122,6 +132,7 @@ case class Greater(leftChild: Expression, rightChild: Expression) extends Binary
 
 }
 
+// Less evaluate the <
 case class Less(leftChild: Expression, rightChild: Expression) extends BinaryOperation with Predicate {
 
   override val javaOperator: String = "<"
@@ -129,7 +140,6 @@ case class Less(leftChild: Expression, rightChild: Expression) extends BinaryOpe
   override def evaluate(row: InternalRow) = typed[Float](row) { _ < _ }
 
 }
-
 
 sealed trait Literal extends Expression {
 
@@ -139,21 +149,23 @@ sealed trait Literal extends Expression {
 
 }
 
+// Text literal, evaluated as String
 case class Text(value: String) extends Literal {
 
   override type Type = String
 
-  def generateCode(javaVariableName: String): String = {
+  def generateJavaCode(javaVariableName: JavaCode): JavaCode = {
     s""""${value}""""
   }
 
 }
 
+// Number literal, evaluated as Float
 case class Number(value: Float) extends Literal {
 
   override type Type = Float
 
-  def generateCode(javaVariableName: String): String = {
+  def generateJavaCode(javaVariableName: JavaCode): JavaCode = {
     s"Float.valueOf(${value}f)"
   }
 
@@ -167,6 +179,7 @@ case class Or(leftChild: Expression, rightChild: Expression) extends BinaryOpera
 
 }
 
+// A TableColumn is a NamedExpression which modelize the fact of accessing the data of a table by its column name (t1.name)
 case class TableColumn(relationName: RelationName, columnName: ColumnName) extends Expression with NamedExpression {
 
   override type Type = Any
@@ -175,7 +188,7 @@ case class TableColumn(relationName: RelationName, columnName: ColumnName) exten
 
   override def evaluate(row: InternalRow): Type = row((Some(relationName), columnName))
 
-  override def generateCode(javaVariableName: String): String = {
+  override def generateJavaCode(javaVariableName: JavaCode): JavaCode = {
     s"""${javaVariableName}.getValue(TableNameAndColumnName.of(Optional.of("${relationName}"), "${columnName}"))"""
   }
 

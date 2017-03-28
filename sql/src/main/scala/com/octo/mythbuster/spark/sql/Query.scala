@@ -13,21 +13,30 @@ import scala.util.Try
 object Query {
 
   def apply(sql: String, config: Config = ConfigFactory.load())(implicit rowIterableRegistry: RowIterableRegistry): Try[Query] = for {
+    // We first lex the SQL query
     tokens <- Lexer(sql)
+    // With all the lexed tokens, we can generate the AST
     ast <- Parser(tokens)
+    // Now that we have the AST, we're able to have a logical plan...
     logicalPlan <- LogicalPlan(ast)
+    // ...Which can be optimized
     optimizedLogicalPlan = LogicalPlanOptimizer.optimizePlan(logicalPlan)
+    // With the logical plan, we're now able to plan the physical plan...
     physicalPlan <- QueryPlanner.planQuery(optimizedLogicalPlan)
+    // ...Which can also be optimized
     optimizedPhysicalPlan = PhysicalPlanOptimizer(config).optimizePlan(physicalPlan)
-    //_ = println(optimizedPhysicalPlan)
+
+  // So we can yield the Query instance, which is just a container around the final physical plan
   } yield new Query(optimizedPhysicalPlan, rowIterableRegistry)
 
 }
 
 class Query(val physicalPlan: PhysicalPlan, rowIterableRegistry: RowIterableRegistry) {
 
+  // It's just a nice API to execute the physical plan we infered above and map the InteralRows to Rows
   def fetch(): Iterator[Row] = physicalPlan.execute().map(_.toRow)
 
+  // It returns a String to have an idea of the physical plan tree which are going to be executed
   def explain(): String = physicalPlan.explain()
 
 }
