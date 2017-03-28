@@ -29,6 +29,17 @@ trait Predicate extends Expression {
 
 }
 
+object NamedExpression {
+
+  def unapply(expression: Expression): Option[ExpressionName] = {
+    expression match {
+      case namedExpression: NamedExpression => Some(namedExpression.name)
+      case _ => None
+    }
+  }
+
+}
+
 trait NamedExpression {
 
   val name: ExpressionName
@@ -93,7 +104,9 @@ case class Equal(leftChild: Expression, rightChild: Expression) extends BinaryOp
 
   override val javaOperator: String = "FIXME"
 
-  override def evaluate(row: InternalRow) = typed[Any](row) { (left: Any, right: Any) => left == right }
+  override def evaluate(row: InternalRow) = typed[Any](row) { (left: Any, right: Any) =>
+    left.toString.equals(right.toString)
+  }
 
   override def generateCode(javaVariableName: String): String = {
     s"((${leftChild.generateCode(javaVariableName)}).toString().equals((${rightChild.generateCode(javaVariableName)}).toString()))"

@@ -9,6 +9,6 @@ object PhysicalPlanOptimizer extends PlanOptimizer[PhysicalPlan] {
 
   private def generateCodeRule(implicit config: Config) = if (config.getBoolean("generateCode")) Seq(GenerateCode) else Seq()
 
-  override def rules(implicit config: Config): Seq[Rule[PhysicalPlan]] = generateCodeRule ++ Nil
+  override def rules(implicit config: Config): Seq[Rule[PhysicalPlan]] = Nil//generateCodeRule ++ Nil
 
 }

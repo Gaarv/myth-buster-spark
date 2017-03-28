@@ -25,7 +25,7 @@ object Query {
 
 }
 
-class Query(physicalPlan: PhysicalPlan, rowIterableRegistry: RowIterableRegistry) {
+class Query(val physicalPlan: PhysicalPlan, rowIterableRegistry: RowIterableRegistry) {
 
   def fetch(): Iterator[Row] = physicalPlan.execute().map(_.toRow)
 

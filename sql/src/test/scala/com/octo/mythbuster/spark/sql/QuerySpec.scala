@@ -14,7 +14,7 @@ class QuerySpec extends UnitSpec {
   val sql =
     """
       |SELECT
-      |  ca.name
+      |  ca.name AS name
       |FROM
       |  cars ca
       |JOIN
@@ -40,6 +40,7 @@ class QuerySpec extends UnitSpec {
     query match {
       case Success(query) => {
         val result = query.fetch().toSeq
+        result.foreach(println)
         result.length should be(2)
       }
       case Failure(e) => fail(e)
@@ -47,14 +48,17 @@ class QuerySpec extends UnitSpec {
   }
 
   it should "also return only 2 rows without code generation" in {
-    //implicit val configWithoutCodeGeneration = ConfigFactory.empty()
-    //  .withValue("generateCode", ConfigValueFactory.fromAnyRef(false))
+    implicit val configWithoutCodeGeneration = ConfigFactory.empty()
+      .withValue("generateCode", ConfigValueFactory.fromAnyRef(false))
 
     query match {
       case Success(query) => {
+        println(query.physicalPlan)
+
         val queryWithoutCodeGeneration = query
 
         val result = queryWithoutCodeGeneration.fetch().toSeq
+        result.foreach(println)
         result.length should be(2)
       }
       case Failure(e) => fail(e)
