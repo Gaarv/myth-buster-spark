@@ -52,19 +52,6 @@ case class CSVFileFullScan(qualifierName: QualifierName, csvFileURL: URL) extend
 
 }
 
-// This physical plan iterate over a iterable in order to produce internal rows
-case class IterableFullScan(qualifierName: QualifierName, iterable: Iterable[Row]) extends PhysicalPlan with t.LeafTreeNode[PhysicalPlan] {
-
-  override def execute(): Iterator[InternalRow] = {
-    iterable.iterator.map(_.toInternalRow(qualifierName))
-  }
-
-  override def explain(indent: Int = 0): String = {
-    s"${"  " * indent}IterableFullScan(${qualifierName}) ${if (supportCodeGeneration()) "*" else ""}"
-  }
-
-}
-
 // This will filter internal rows which does not fulfill the expression (which should be a predicate)
 case class Filter(child: PhysicalPlan, expression: e.Expression) extends PhysicalPlan with JavaCodeGenerationSupport with t.UnaryTreeNode[PhysicalPlan] {
 
@@ -106,14 +93,13 @@ case class CartesianProduct(leftChild: PhysicalPlan, rightChild: PhysicalPlan) e
 // The projection will map the InternalRows by applying the expressions
 case class Projection(child: PhysicalPlan, expressions : Seq[e.Expression]) extends PhysicalPlan with t.UnaryTreeNode[PhysicalPlan] with JavaCodeGenerationSupport {
 
-  def execute(): Iterator[InternalRow] = child.execute().map({ internalRow: InternalRow =>
+  def execute(): Iterator[InternalRow] = child.execute().map({ internalRow =>
     Map(expressions.zipWithIndex.map({ case (expression: e.Expression, index: Int) =>
-      val value = expression.evaluate(internalRow)
+      val value: Any = expression.evaluate(internalRow)
       (expression match {
         case e.NamedExpression(name) => (None, name)
         case _ => (None, s"column_${index}")
       }) -> value
-
     }): _*)
   })
 

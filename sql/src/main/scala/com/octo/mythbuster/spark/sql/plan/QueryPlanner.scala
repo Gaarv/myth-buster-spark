@@ -15,7 +15,7 @@ object QueryPlanner {
       l.Projection -> p.Projection
       l.CartesianProduct -> p.CartesianProduct
       l.Filter -> p.Filter
-      l.TableScan -> Either CSVFileFullScan or IterableFullScan
+      l.TableScan -> Either CSVFileFullScan
    */
 
   protected def doPlanQuery(logicalPlan: l.LogicalPlan): p.PhysicalPlan = logicalPlan match {
