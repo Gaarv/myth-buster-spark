@@ -12,7 +12,7 @@ import scala.util.Try
 
 object Query {
 
-  def apply(sql: String, config: Config = ConfigFactory.load())(implicit rowIterableRegistry: RowIterableRegistry): Try[Query] = for {
+  def apply(sql: String, config: Config = ConfigFactory.load()): Try[Query] = for {
     // We first lex the SQL query
     tokens <- Lexer(sql)
     // With all the lexed tokens, we can generate the AST
@@ -27,11 +27,11 @@ object Query {
     optimizedPhysicalPlan = PhysicalPlanOptimizer(config).optimizePlan(physicalPlan)
 
   // So we can yield the Query instance, which is just a container around the final physical plan
-  } yield new Query(optimizedPhysicalPlan, rowIterableRegistry)
+  } yield new Query(optimizedPhysicalPlan)
 
 }
 
-class Query(val physicalPlan: PhysicalPlan, rowIterableRegistry: RowIterableRegistry) {
+class Query(val physicalPlan: PhysicalPlan) {
 
   // It's just a nice API to execute the physical plan we infered above and map the InteralRows to Rows
   def fetch(): Iterator[Row] = physicalPlan.execute().map(_.toRow)

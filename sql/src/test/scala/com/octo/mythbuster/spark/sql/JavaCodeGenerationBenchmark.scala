@@ -2,7 +2,7 @@ package com.octo.mythbuster.spark.sql
 
 import org.scalameter.api._
 
-class JavaCodeGenerationBenchmark extends Bench.LocalTime {
+/*class JavaCodeGenerationBenchmark extends Bench.LocalTime {
 
   val sql = """SELECT
               |  ca.name AS name
@@ -30,4 +30,4 @@ class JavaCodeGenerationBenchmark extends Bench.LocalTime {
     }
   }
 
-}
+}*/

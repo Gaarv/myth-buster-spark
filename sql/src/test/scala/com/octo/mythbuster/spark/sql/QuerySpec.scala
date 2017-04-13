@@ -6,8 +6,6 @@ import com.typesafe.config.{ConfigFactory, ConfigValue, ConfigValueFactory}
 
 class QuerySpec extends UnitSpec {
 
-  import sample._
-
   def config(shouldGenerateCode: Boolean) = {
     ConfigFactory.empty()
       .withValue("shouldGenerateCode", ConfigValueFactory.fromAnyRef(shouldGenerateCode))
