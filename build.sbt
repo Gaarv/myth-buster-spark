@@ -29,5 +29,12 @@ lazy val sql = (project in file("sql"))
   .settings(commonSettings)
   .settings(name := "spark-sql")
   .settings(libraryDependencies ++= Dependencies.Parsing)
-  .settings(initialCommands in console := "import com.octo.mythbuster.spark.sql.lexer._, com.octo.mythbuster.spark.sql.parser._")
+  .settings(initialCommands in console :=
+    """
+      |import com.octo.mythbuster.spark.Implicits._
+      |import com.octo.mythbuster.spark.sql.lexer._
+      |import com.octo.mythbuster.spark.sql.parser._
+      |
+      |import com.octo.mythbuster.spark.example._
+    """.stripMargin)
   .dependsOn(common % "test->test;compile->compile", compiler)
