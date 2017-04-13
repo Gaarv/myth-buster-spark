@@ -1,9 +1,6 @@
 package com.octo.mythbuster.spark
 
 import com.octo.mythbuster.spark.sql.plan.physical.InternalRow
-import com.octo.mythbuster.spark.Implicits._
-
-import scala.util.Try
 
 package object sql {
 
