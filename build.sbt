@@ -22,7 +22,7 @@ lazy val common = (project in file("common"))
 lazy val compiler = (project in file("compiler"))
   .settings(commonSettings)
   .settings(name := "spark-compiler")
-  .dependsOn(common)
+  .dependsOn(common % "test->test,compile->compile")
 
 lazy val sql = (project in file("sql"))
   .settings(commonSettings)
