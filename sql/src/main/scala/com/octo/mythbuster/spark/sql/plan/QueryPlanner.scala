@@ -21,6 +21,7 @@ object QueryPlanner {
   protected def doPlanQuery(logicalPlan: l.LogicalPlan): p.PhysicalPlan = logicalPlan match {
     case l.Projection(child, expressions) => p.Projection(doPlanQuery(child), expressions)
     case l.CartesianProduct(leftChild, rightChild) => p.CartesianProduct(doPlanQuery(leftChild), doPlanQuery(rightChild))
+    case l.Join(leftChild, rightChild, operation) => p.Join(doPlanQuery(leftChild), doPlanQuery(rightChild), operation)
 
     case l.Filter(child, expression: e.Expression) => p.Filter(doPlanQuery(child), expression)
 

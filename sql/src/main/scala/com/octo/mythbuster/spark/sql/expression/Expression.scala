@@ -128,7 +128,12 @@ case class Greater(leftChild: Expression, rightChild: Expression) extends Binary
 
   override val javaOperator: String = ">"
 
-  override def evaluate(row: InternalRow) = typed[Float](row) { _ > _ }
+  override def evaluate(row: InternalRow) = leftChild.evaluate(row).toString.toFloat > rightChild.evaluate(row).asInstanceOf[Float]
+
+  // Because of the Any type (as we did not make a real type system), we need to convert them to String in order to do the comparaison
+  override def generateJavaCode(javaVariableName: JavaCode): JavaCode = {
+    s"Float.parseFloat(${leftChild.generateJavaCode(javaVariableName)}.toString()) > ${rightChild.generateJavaCode(javaVariableName)}"
+  }
 
 }
 
@@ -138,6 +143,10 @@ case class Less(leftChild: Expression, rightChild: Expression) extends BinaryOpe
   override val javaOperator: String = "<"
 
   override def evaluate(row: InternalRow) = typed[Float](row) { _ < _ }
+
+  override def generateJavaCode(javaVariableName: JavaCode): JavaCode = {
+    s"Float.parseFloat(${leftChild.generateJavaCode(javaVariableName)}.toString()) < ${rightChild.generateJavaCode(javaVariableName)}"
+  }
 
 }
 
@@ -189,7 +198,10 @@ case class TableColumn(relationName: RelationName, columnName: ColumnName) exten
   override def evaluate(row: InternalRow): Type = row((Some(relationName), columnName))
 
   override def generateJavaCode(javaVariableName: JavaCode): JavaCode = {
-    s"""${javaVariableName}.getValue(TableNameAndColumnName.of(Optional.of("${relationName}"), "${columnName}"))"""
+    if(javaVariableName == null)
+      s"""TableNameAndColumnName.of(Optional.of("${relationName}"), "${columnName}")"""
+    else
+      s"""${javaVariableName}.getValue(TableNameAndColumnName.of(Optional.of("${relationName}"), "${columnName}"))"""
   }
 
 }

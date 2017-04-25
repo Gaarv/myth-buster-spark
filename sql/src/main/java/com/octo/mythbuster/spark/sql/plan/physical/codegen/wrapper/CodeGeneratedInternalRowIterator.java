@@ -1,5 +1,6 @@
 package com.octo.mythbuster.spark.sql.plan.physical.codegen.wrapper;
 
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Lists;
 
 import java.util.Iterator;
@@ -42,7 +43,7 @@ public abstract class CodeGeneratedInternalRowIterator implements Iterator<Inter
     }
 
     protected boolean shouldContinue() {
-        return !currentRows.isEmpty();
+        return currentRows.isEmpty();
     }
 
     protected abstract void doContinue();
@@ -62,5 +63,6 @@ public abstract class CodeGeneratedInternalRowIterator implements Iterator<Inter
         return currentRows.remove();
     }
 
+    abstract public void init(Object[] references);
 
 }

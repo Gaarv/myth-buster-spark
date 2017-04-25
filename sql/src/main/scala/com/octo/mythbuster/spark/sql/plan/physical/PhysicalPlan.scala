@@ -2,9 +2,12 @@ package com.octo.mythbuster.spark.sql.plan.physical
 
 import java.net.URL
 import java.nio.file.Path
+import java.util
 
 import com.google.common.base.Charsets
 import com.google.common.io.Resources
+import com.octo.mythbuster.spark.sql.expression.BinaryOperation
+import com.octo.mythbuster.spark.sql.plan.physical.codegen.wrapper.{InternalRow => JavaInternalRow}
 
 import scala.util.{Failure, Success}
 import com.octo.mythbuster.spark.sql._
@@ -33,11 +36,11 @@ case class CSVFileFullScan(qualifierName: QualifierName, csvFileURL: URL) extend
 
   import scala.collection.JavaConverters._
 
-  val Separator = ","
+  val Separator = ";"
 
   override def execute(): Iterator[InternalRow] = {
     val charSource = Resources.asCharSource(csvFileURL, Charsets.UTF_8)
-    val columnNames = charSource.readFirstLine().split(Separator)
+    val columnNames = charSource.readFirstLine().split(Separator).map(_.toLowerCase)
     charSource.readLines().asScala.drop(1)
       .map({ line =>
         columnNames.zip(line.split(Separator)).toMap[String, Any]
@@ -77,15 +80,72 @@ case class Filter(child: PhysicalPlan, expression: e.Expression) extends Physica
 // The CartesianProduct will do a cartesian product of the two child (by keeping in memory the right one)
 case class CartesianProduct(leftChild: PhysicalPlan, rightChild: PhysicalPlan) extends PhysicalPlan with t.BinaryTreeNode[PhysicalPlan] {
 
+  override def execute(): Iterator[InternalRow] = {
+    val rightRows = rightChild.execute().toSeq
+    for {
+      leftRow <- leftChild.execute()
+      rightRow <- rightRows
+    } yield leftRow ++ rightRow
+  }
+
+  override def explain(indent: Int = 0): String = {
+    s"""${"  " * indent}CartesianProduct ${if (supportCodeGeneration()) "*" else ""}
+       |${leftChild.explain(indent + 1)}
+       |${rightChild.explain(indent + 1)}""".stripMargin
+  }
+
+//  override def doConsumeJavaCode(codeGenerationContext: c.JavaCodeGenerationContext, variableName: JavaCode): JavaCode = {
+//    val currentIterator = codeGenerationContext.iteratorVariable
+//    val currentIterable = codeGenerationContext.iterableVariable
+//    s"""if(!$currentIterator.hasNext) $currentIterator = $currentIterable.iterator;
+//        |while($currentIterator.hasNext) {
+//        |  InternalRow joinedRow = $currentIterator.next();
+//        |  $variableName.concatenate(joinedRow);
+//        |  ${consumeJavaCode(codeGenerationContext, variableName)}
+//        |}
+//        |""".stripMargin
+//  }
+
+}
+
+// The CartesianProduct will do a cartesian product of the two child (by keeping in memory the right one)
+case class Join(leftChild: PhysicalPlan, rightChild: PhysicalPlan, operation : BinaryOperation) extends PhysicalPlan with t.BinaryTreeNode[PhysicalPlan] with JavaCodeGenerationSupport {
+
+  override val child = leftChild
+
   override def execute(): Iterator[InternalRow] = for {
     leftRow <- leftChild.execute()
-    rightRow <- rightChild.execute().toSeq
+    rightRow <- rightChild.execute().toSeq if operation.evaluate(leftRow ++ rightRow).asInstanceOf[Boolean]
   } yield leftRow ++ rightRow
 
   override def explain(indent: Int = 0): String = {
     s"""${"  " * indent}CartesianProduct ${if (supportCodeGeneration()) "*" else ""}
        |${leftChild.explain(indent + 1)}
        |${rightChild.explain(indent + 1)}""".stripMargin
+  }
+
+  override def doConsumeJavaCode(codeGenerationContext: c.JavaCodeGenerationContext, variableName: JavaCode): JavaCode = {
+    import scala.collection.JavaConverters._
+    import com.octo.mythbuster.spark.sql.plan.physical.codegen.Implicits._
+    val rightIterable : java.lang.Iterable[JavaInternalRow] = new java.lang.Iterable[JavaInternalRow]() {
+      lazy val data : Seq[InternalRow] = rightChild.execute().toSeq
+
+      override def iterator(): util.Iterator[JavaInternalRow] = data.toIterator.wrapForJava()
+    }
+    val joinedIterableVariable = codeGenerationContext.addReference(rightIterable, "Iterable<InternalRow>")
+    val currentIterator =  codeGenerationContext.iteratorVariable
+    Iterable().iterator
+    s"""Iterator<InternalRow> $currentIterator = $joinedIterableVariable.iterator();
+        |while($currentIterator.hasNext()) {
+        |  InternalRow joinedRow = $currentIterator.next();
+        |
+        |  if(!((${operation.rightChild.generateJavaCode("joinedRow")}).toString().equals((${operation.leftChild.generateJavaCode(variableName)}).toString()))) continue;
+        ||
+        |     $variableName.concatenate(joinedRow);
+        |     ${consumeJavaCode(codeGenerationContext, variableName)}
+        |     break;
+        |}
+        |""".stripMargin
   }
 
 }
@@ -111,12 +171,16 @@ case class Projection(child: PhysicalPlan, expressions : Seq[e.Expression]) exte
   override def doConsumeJavaCode(codeGenerationContext: c.JavaCodeGenerationContext, variableName: JavaCode): JavaCode = {
     val internalRowWithProjection = codeGenerationContext.freshVariableName()
     val arrayVariableName = codeGenerationContext.freshVariableName()
-    s"""Object ${arrayVariableName}[] = {
-      |  ${expressions.map(_.generateJavaCode(variableName)).mkString(",\n")}
-      |};
+    codeGenerationContext.addClassAttribute(
+      name = arrayVariableName,
+      typeName = "TableNameAndColumnName[]",
+      initCode = s"new TableNameAndColumnName[] {${expressions.map(_.generateJavaCode(null)).mkString(",")}}"
+    )
+
+    s"""
       |InternalRow ${internalRowWithProjection} = InternalRow.create();
-      |for(int index = 0; index < ${arrayVariableName}.length; index++) {
-      |  ${internalRowWithProjection}.setValue(TableNameAndColumnName.of(Optional.empty(), "column_" + index), ${arrayVariableName}[index]);
+      |for(TableNameAndColumnName column : ${arrayVariableName}) {
+      |  ${internalRowWithProjection}.setValue(column, $variableName.getValue(column));
       |}
       |currentRows.add(${internalRowWithProjection});
     """.stripMargin

@@ -13,14 +13,13 @@ import Implicits._
 
 case class JavaCodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with t.UnaryTreeNode[p.PhysicalPlan] with JavaCodeGenerationSupport with Logging with Caching[JavaClassSource, Iterator[p.InternalRow]] {
 
-  def generateJavaCode(): JavaCode = {
-    val codeGenerationContext = JavaCodeGenerationContext()
+  def generateJavaCode(codeGenerationContext : JavaCodeGenerationContext): JavaCode = {
     val generatedCode = child.asInstanceOf[JavaCodeGenerationSupport].produceJavaCode(codeGenerationContext, this)
     generatedCode
   }
 
-  def generateClassSource(): JavaClassSource = {
-    val methodCode = generateJavaCode()
+  def generateClassSource(codeGenerationContext : JavaCodeGenerationContext): JavaClassSource = {
+    val methodCode = generateJavaCode(codeGenerationContext)
 
     val packageName = "octo.sql.physical.codegen.impl"
     val classSimpleName = "CodeGeneratedInternalRowIteratorImpl"
@@ -41,6 +40,8 @@ case class JavaCodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with
          |
          |public class $classSimpleName extends CodeGeneratedInternalRowIterator {
          |
+         |   ${codeGenerationContext.generateAttributesDeclarationCode}
+         |
          |   public $classSimpleName(Iterator<InternalRow> childRows) {
          |     super(childRows);
          |   }
@@ -48,6 +49,11 @@ case class JavaCodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with
          |   @Override
          |   protected void doContinue() {
          |     ${methodCode}
+         |   }
+         |
+         |   @Override
+         |   public void init(Object[] references) {
+         |      ${codeGenerationContext.generateInitCode}
          |   }
          |
          |}
@@ -61,9 +67,11 @@ case class JavaCodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with
   }
 
   def execute(): Iterator[p.InternalRow] = {
-    cache.get(generateClassSource()) { classSource =>
+    println("execute")
+    val codeGenerationContext = JavaCodeGenerationContext()
+    cache.get(generateClassSource(codeGenerationContext)) { classSource =>
       classSource.compile() match {
-        case Success(generatedClass) => newInstanceOfGeneratedClass(generatedClass, child.asInstanceOf[JavaCodeGenerationSupport].inputRows)
+        case Success(generatedClass) => newInstanceOfGeneratedClass(generatedClass, child.asInstanceOf[JavaCodeGenerationSupport].inputRows, codeGenerationContext.getReferencesAsArray)
         case Failure(e) => throw e
       }
     }
@@ -83,9 +91,11 @@ case class JavaCodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with
      """.stripMargin.trim
   }
 
-  protected def newInstanceOfGeneratedClass(generatedClass: Class[_], childRows: ScalaIterator[ScalaInternalRow]): ScalaIterator[ScalaInternalRow] = {
+  protected def newInstanceOfGeneratedClass(generatedClass: Class[_], childRows: ScalaIterator[ScalaInternalRow], references : Array[Object]): ScalaIterator[ScalaInternalRow] = {
     val constructor = generatedClass.getConstructor(classOf[JavaIterator[JavaInternalRow]])
-    constructor.newInstance(childRows.wrapForJava).asInstanceOf[CodeGeneratedInternalRowIterator].unwrapForScala
+    val newInstance = constructor.newInstance(childRows.wrapForJava).asInstanceOf[CodeGeneratedInternalRowIterator]
+    newInstance.init(references)
+    newInstance.unwrapForScala()
   }
 
   def explain(indent: Int = 0): String = {

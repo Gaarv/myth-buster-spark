@@ -1,5 +1,7 @@
 package com.octo.mythbuster.spark.sql.parser
 
+import com.octo.mythbuster.spark.sql.expression.BinaryOperation
+
 import scala.{ util => u }
 
 import scala.util.parsing.combinator.Parsers
@@ -35,9 +37,10 @@ object Parser extends Parsers {
   def and: Parser[e.Expression] = comparator * ( l.And() ^^^ { (left: e.Expression, right: e.Expression) => e.And(left, right) } )
 
 
-  def comparator: Parser[e.Expression] = primaryExpression ~ rep(( l.Greater() | l.Equal() ) ~ primaryExpression ) ^^ { case lhs ~ elements =>
+  def comparator: Parser[e.Expression] = primaryExpression ~ rep(( l.Less() | l.Greater() | l.Equal() ) ~ primaryExpression ) ^^ { case lhs ~ elements =>
     elements.foldLeft(lhs) {
       case (acc, l.Greater() ~ rhs) => e.Greater(acc, rhs)
+      case (acc, l.Less() ~ rhs) => e.Less(acc, rhs)
       case (acc, l.Equal() ~ rhs) => e.Equal(acc, rhs)
     }
 
@@ -72,7 +75,7 @@ object Parser extends Parsers {
 
   def relations = l.From() ~> rep1sep(relation, l.Comma())
 
-  def relation: Parser[Relation] = simpleRelation ~ rep(l.Join() ~ simpleRelation ~ l.On() ~ expression ^^ { case _ ~ relation ~ _ ~ filter => (relation, filter) } ) ^^ {
+  def relation: Parser[Relation] = simpleRelation ~ rep(l.Join() ~ simpleRelation ~ l.On() ~ equal ^^ { case _ ~ relation ~ _ ~ filter => (relation, filter) } ) ^^ {
     case lhs ~ elements => elements.foldLeft(lhs) { case (leftRelation, (rightRelation, filter)) => Join(filter, leftRelation, rightRelation) }
   }
 
@@ -82,9 +85,11 @@ object Parser extends Parsers {
 
   }
 
-  def table = { identifier } ^^ { case l.Identifier(tableName) => Table(tableName) }
+  def table : Parser[Table] = { identifier } ^^ { case l.Identifier(tableName) => Table(tableName) }
 
-  def join = { relation ~ l.Join() ~ table ~ l.On() ~ expression } ^^ { case leftRelation ~ _ ~ rightRelation ~ _ ~ filter => Join(filter, leftRelation, rightRelation) }
+  def equal : Parser[BinaryOperation] = primaryExpression ~ l.Equal() ~ primaryExpression ^^ { case leftColumn ~ _ ~ rightColumn => e.Equal(leftColumn, rightColumn) }
+
+  def join = { relation ~ l.Join() ~ table ~ l.On() ~ equal } ^^ { case leftRelation ~ _ ~ rightRelation ~ _ ~ filter => Join(filter, leftRelation, rightRelation) }
 
   def ast: Parser[AST] = select
 
