@@ -67,6 +67,8 @@ case class PlotReporter(fileName: String = "plot.png") extends Reporter[Double] 
          |set linetype 1 linecolor rgb "#3923D6" linewidth 2
          |set linetype 3 linecolor rgb "#2DC800" linewidth 2
          |
+         |set yrange [] reverse
+         |
          |set dgrid3d 30,30
          |set hidden3d nooffset
          |

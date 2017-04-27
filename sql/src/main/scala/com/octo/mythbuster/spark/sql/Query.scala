@@ -12,7 +12,7 @@ import scala.util.Try
 
 object Query {
 
-  val ConfigWithCodeGeneration = ConfigFactory.load().withValue("shouldGenerateCode", ConfigValueFactory.fromAnyRef(true))
+  val ConfigWithCodeGeneration = ConfigFactory.load().withValue("shouldGenerateCode", ConfigValueFactory.fromAnyRef(false))
 
   val ConfigWithoutCodeGeneration = ConfigFactory.load().withValue("shouldGenerateCode", ConfigValueFactory.fromAnyRef(false))
 
