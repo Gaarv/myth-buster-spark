@@ -39,11 +39,15 @@ object Dependencies {
 
   val Configuring = Config
 
+  val ScalaPlot = Seq(
+    "org.sameersingh.scalaplot" % "scalaplot" % "0.0.4"
+  )
+
   val ScalaTest = Seq(
     "org.scalatest" %% "scalatest" % "3.0.1"
   )
 
-  val Testing = ScalaTest ++ ScalaMeter
+  val Testing = ScalaTest ++ ScalaMeter ++ ScalaPlot
 
   val Common = Tooling ++ Logging ++ Configuring ++ (Testing map { _ % "test" })
 

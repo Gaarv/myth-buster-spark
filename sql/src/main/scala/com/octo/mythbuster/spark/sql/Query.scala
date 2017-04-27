@@ -6,11 +6,15 @@ import com.octo.mythbuster.spark.sql.plan.physical.{PhysicalPlan, PhysicalPlanOp
 import com.octo.mythbuster.spark.sql.plan.logical.{LogicalPlan, LogicalPlanOptimizer}
 import com.octo.mythbuster.spark.sql.plan.QueryPlanner
 import com.octo.mythbuster.spark.sql.plan.physical._
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
 
 import scala.util.Try
 
 object Query {
+
+  val ConfigWithCodeGeneration = ConfigFactory.load().withValue("shouldGenerateCode", ConfigValueFactory.fromAnyRef(true))
+
+  val ConfigWithoutCodeGeneration = ConfigFactory.load().withValue("shouldGenerateCode", ConfigValueFactory.fromAnyRef(false))
 
   def apply(sql: String, config: Config = ConfigFactory.load()): Try[Query] = for {
     // We first lex the SQL query

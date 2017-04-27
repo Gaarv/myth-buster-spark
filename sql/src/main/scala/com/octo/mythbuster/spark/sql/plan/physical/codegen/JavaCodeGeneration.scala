@@ -11,7 +11,9 @@ import com.octo.mythbuster.spark.sql.plan.physical.codegen.wrapper.{CodeGenerate
 import com.octo.mythbuster.spark.sql.plan.physical.{InternalRow => ScalaInternalRow}
 import Implicits._
 
-case class JavaCodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with t.UnaryTreeNode[p.PhysicalPlan] with JavaCodeGenerationSupport with Logging with Caching[JavaClassSource, Iterator[p.InternalRow]] {
+object JavaCodeGeneration extends Caching[JavaClassSource, Iterator[p.InternalRow]]
+
+case class JavaCodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with t.UnaryTreeNode[p.PhysicalPlan] with JavaCodeGenerationSupport with Logging {
 
   def generateJavaCode(codeGenerationContext : JavaCodeGenerationContext): JavaCode = {
     val generatedCode = child.asInstanceOf[JavaCodeGenerationSupport].produceJavaCode(codeGenerationContext, this)
@@ -69,7 +71,7 @@ case class JavaCodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with
   def execute(): Iterator[p.InternalRow] = {
     println("execute")
     val codeGenerationContext = JavaCodeGenerationContext()
-    cache.get(generateClassSource(codeGenerationContext)) { classSource =>
+    JavaCodeGeneration.cache.get(generateClassSource(codeGenerationContext)) { classSource =>
       classSource.compile() match {
         case Success(generatedClass) => newInstanceOfGeneratedClass(generatedClass, child.asInstanceOf[JavaCodeGenerationSupport].inputRows, codeGenerationContext.getReferencesAsArray)
         case Failure(e) => throw e
