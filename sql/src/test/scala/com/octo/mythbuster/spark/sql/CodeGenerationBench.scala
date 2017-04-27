@@ -10,7 +10,7 @@ import org.scalameter.api._
 
 import scala.collection.JavaConverters._
 
-object CodeGenerationBenchmark extends QueryBench[(Int, Int)] with Logging {
+object CodeGenerationBench extends QueryBench[(Int, Int)] with Logging {
 
   val TableRowCounts = for {
     leftTableCount <- Gen.range("leftTableRowCount")(0, 10000, 500)
@@ -19,7 +19,7 @@ object CodeGenerationBenchmark extends QueryBench[(Int, Int)] with Logging {
 
 
 
-  performance of "JOIN Clause" in {
+  performance of "Code" in {
 
     generateTables
 

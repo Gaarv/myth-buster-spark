@@ -1,6 +1,6 @@
 package com.octo.mythbuster.spark.sql
 
-import com.octo.mythbuster.spark.sql.CodeGenerationBenchmark.sql
+import com.octo.mythbuster.spark.sql.CodeGenerationBench.sql
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalameter.Reporter.Composite
 import org.scalameter.{Aggregator, Measurer}

@@ -11,6 +11,9 @@ import scala.sys.process._
 import scala.language.postfixOps
 import scala.collection.JavaConverters._
 
+// http://gnuplot.sourceforge.net/demo/layout.html
+// https://www.sciencetronics.com/greenphotons/?p=570
+
 object PlotReporter {
 
   val FileParentFolderPath = Paths.get("target/benchmarks")
