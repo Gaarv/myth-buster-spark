@@ -34,6 +34,7 @@ case class JavaCodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with
          |import java.util.Map;
          |import com.octo.mythbuster.spark.sql.plan.physical.codegen.wrapper.CodeGeneratedInternalRowIterator;
          |import com.octo.mythbuster.spark.sql.plan.physical.codegen.wrapper.InternalRow;
+         |import com.octo.mythbuster.spark.sql.plan.physical.LazyIteratorToJavaMap;
          |import java.util.LinkedList;
          |import java.util.HashMap;
          |import java.util.Optional;

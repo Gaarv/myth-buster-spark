@@ -24,7 +24,7 @@ object Implicits {
 
     def unwrapForScala(): ScalaInternalRow = {
       internalRow.unwrap().asScala.toMap.map({ case (tableNameAndColumnName :String , value) => {
-        val split = tableNameAndColumnName.toString.split(".")
+        val split = tableNameAndColumnName.toString.split('.')
         val tableColumn = if(split.length  == 2) (Some(split.head), split.last) else (None, tableNameAndColumnName)
         (tableColumn, value)
       }

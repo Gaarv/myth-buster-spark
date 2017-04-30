@@ -9,12 +9,17 @@ object CodeFormatter {
 
   def format(code : String) : String = {
     var indentCount = 0
+    var lastLine = "foo"
 
-    code.split("\n").map(_.trim).map{ line =>
-      val nextLineAdditionalIndent = line.count(isOpenChar) - line.count(isCloseChar)
-      val thisLineIndent = indentCount - (if(startsWithCloseChar(line)) 1 else 0)
-      indentCount += nextLineAdditionalIndent
-      indentString * thisLineIndent + line
+    code.split("\n").map(_.trim).flatMap{ line =>
+      if(line.isEmpty && lastLine.isEmpty) None
+      else {
+        val nextLineAdditionalIndent = line.count(isOpenChar) - line.count(isCloseChar)
+        val thisLineIndent = indentCount - (if(startsWithCloseChar(line)) 1 else 0)
+        indentCount += nextLineAdditionalIndent
+        lastLine = line
+        Some(indentString * thisLineIndent + line)
+      }
     }.zipWithIndex.map({ case (line, index) =>
       s"/* ${pad(index + 1)} */ ${line}"
     }).mkString("\n")
