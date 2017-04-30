@@ -33,7 +33,7 @@ package object example extends App {
   val totalTime = endTime - startTime
   val executionTime = endTime - startExecutionTime
 
-  showRows(result)
+  showRows(result, 10)
 
   println("\n")
   println("Plan compilation : " + (totalTime - executionTime) /1000 + "s")
@@ -47,7 +47,7 @@ package object example extends App {
     Map("color" -> "dark green", "name" -> "Amy", "message" -> "You are all awesome")
   )
 
-  def showRows(listRows : IndexedSeq[Row]) = {
+  def showRows(listRows : IndexedSeq[Row], limit : Int = -1) = {
     def pad(s : String, length : Int) = s + (" " * Math.max(length - s.length, 0))
 
     if(listRows.isEmpty) {
@@ -65,9 +65,11 @@ package object example extends App {
         pad(column, size) -> results(column).map(pad(_, size))
       }.toMap
       val nbTuples = paddedResults.head._2.length
+      val nbTuplesShown = if(limit > 0) Math.min(nbTuples, limit) else nbTuples
       println(paddedResults.keys.mkString(" ", " | ", " "))
       println(sizes.map(s => "-" * s._2).mkString("-", "-+-", "-"))
-      println((0 until nbTuples).map(i => paddedResults.map(s => s._2(i)).mkString(" ", " | ", " ")).mkString("\n"))
+      println((0 until nbTuplesShown).map(i => paddedResults.map(s => s._2(i)).mkString(" ", " | ", " ")).mkString("\n"))
+      if(limit > 0 && limit < nbTuples) println(s"($limit rows shown)")
     }
   }
 

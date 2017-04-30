@@ -34,7 +34,6 @@ case class JavaCodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with
          |import java.util.Map;
          |import com.octo.mythbuster.spark.sql.plan.physical.codegen.wrapper.CodeGeneratedInternalRowIterator;
          |import com.octo.mythbuster.spark.sql.plan.physical.codegen.wrapper.InternalRow;
-         |import com.octo.mythbuster.spark.sql.plan.physical.codegen.wrapper.TableNameAndColumnName;
          |import java.util.LinkedList;
          |import java.util.HashMap;
          |import java.util.Optional;
@@ -61,9 +60,7 @@ case class JavaCodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with
          |}
       """.stripMargin
 
-    logger.debug("classCode={}", classCode.split("\n").zipWithIndex.map({ case (line, index) =>
-      s"/* ${index} */ ${line}"
-    }).mkString("\n"))
+    logger.debug("classCode=\n{}", CodeFormatter.format(classCode))
 
     JavaClassSource(className, classCode)
   }

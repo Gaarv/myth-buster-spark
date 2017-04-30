@@ -71,8 +71,11 @@ case class Filter(child: PhysicalPlan, expression: e.Expression) extends Physica
   }
 
   override def doConsumeJavaCode(codeGenerationContext: c.JavaCodeGenerationContext, variableName: JavaCode): JavaCode = {
-    s"""if(!(${expression.generateJavaCode(variableName)})) continue;
-       |${consumeJavaCode(codeGenerationContext, variableName)}""".stripMargin
+    s"""
+       |// FILTER
+       |if(!(${expression.generateJavaCode(variableName)})) continue;
+       |${consumeJavaCode(codeGenerationContext, variableName)}
+      """.stripMargin
   }
 
 }
@@ -93,18 +96,6 @@ case class CartesianProduct(leftChild: PhysicalPlan, rightChild: PhysicalPlan) e
        |${leftChild.explain(indent + 1)}
        |${rightChild.explain(indent + 1)}""".stripMargin
   }
-
-//  override def doConsumeJavaCode(codeGenerationContext: c.JavaCodeGenerationContext, variableName: JavaCode): JavaCode = {
-//    val currentIterator = codeGenerationContext.iteratorVariable
-//    val currentIterable = codeGenerationContext.iterableVariable
-//    s"""if(!$currentIterator.hasNext) $currentIterator = $currentIterable.iterator;
-//        |while($currentIterator.hasNext) {
-//        |  InternalRow joinedRow = $currentIterator.next();
-//        |  $variableName.concatenate(joinedRow);
-//        |  ${consumeJavaCode(codeGenerationContext, variableName)}
-//        |}
-//        |""".stripMargin
-//  }
 
 }
 
@@ -135,15 +126,15 @@ case class Join(leftChild: PhysicalPlan, rightChild: PhysicalPlan, operation : B
     val joinedIterableVariable = codeGenerationContext.addReference(rightIterable, "Iterable<InternalRow>")
     val currentIterator =  codeGenerationContext.iteratorVariable
     Iterable().iterator
-    s"""Iterator<InternalRow> $currentIterator = $joinedIterableVariable.iterator();
+    s"""
+        |// JOIN
+        |Iterator<InternalRow> $currentIterator = $joinedIterableVariable.iterator();
         |while($currentIterator.hasNext()) {
         |  InternalRow joinedRow = $currentIterator.next();
-        |
         |  if(!((${operation.rightChild.generateJavaCode("joinedRow")}).toString().equals((${operation.leftChild.generateJavaCode(variableName)}).toString()))) continue;
-        ||
-        |     $variableName.concatenate(joinedRow);
-        |     ${consumeJavaCode(codeGenerationContext, variableName)}
-        |     break;
+        |  $variableName.concatenate(joinedRow);
+        |  ${consumeJavaCode(codeGenerationContext, variableName)}
+        |  break;
         |}
         |""".stripMargin
   }
@@ -173,15 +164,22 @@ case class Projection(child: PhysicalPlan, expressions : Seq[e.Expression]) exte
     val arrayVariableName = codeGenerationContext.freshVariableName()
     codeGenerationContext.addClassAttribute(
       name = arrayVariableName,
-      typeName = "TableNameAndColumnName[]",
-      initCode = s"new TableNameAndColumnName[] {${expressions.map(_.generateJavaCode(null)).mkString(",")}}"
+      typeName = "String[]",
+      initCode = s"new String[] {${expressions.map(_.generateJavaCode(null)).mkString(",")}}"
     )
 
+    val projections = expressions
+      .map(_.generateJavaCode(null))
+
+    val projectionsCode = projections
+      .map(c => s"${internalRowWithProjection}.setValue($c, $variableName.getValue($c));")
+      .mkString("\n")
+
+
     s"""
+      |// PROJECTION over ${projections.mkString(",")}
       |InternalRow ${internalRowWithProjection} = InternalRow.create();
-      |for(TableNameAndColumnName column : ${arrayVariableName}) {
-      |  ${internalRowWithProjection}.setValue(column, $variableName.getValue(column));
-      |}
+      |$projectionsCode
       |currentRows.add(${internalRowWithProjection});
     """.stripMargin
   }

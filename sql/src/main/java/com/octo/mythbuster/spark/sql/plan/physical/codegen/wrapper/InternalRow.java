@@ -5,18 +5,18 @@ import java.util.Map;
 
 public class InternalRow {
 
-    private Map<TableNameAndColumnName, Object> valueByTableNameAndColumName;
+    private Map<String, Object> valueByTableNameAndColumName;
 
-    private InternalRow(Map<TableNameAndColumnName, Object> valueByTableNameAndColumName) {
+    private InternalRow(Map<String, Object> valueByTableNameAndColumName) {
         super();
         this.valueByTableNameAndColumName = valueByTableNameAndColumName;
     }
 
-    public static InternalRow wrap(Map<TableNameAndColumnName, Object> valueByTableNameAndColumName) {
+    public static InternalRow wrap(Map<String, Object> valueByTableNameAndColumName) {
         return new InternalRow(valueByTableNameAndColumName);
     }
 
-    public Map<TableNameAndColumnName, Object> unwrap() {
+    public Map<String, Object> unwrap() {
         return valueByTableNameAndColumName;
     }
 
@@ -25,7 +25,7 @@ public class InternalRow {
         newRow.valueByTableNameAndColumName.putAll(valueByTableNameAndColumName);
         newRow.valueByTableNameAndColumName.putAll(concatInternalRow.valueByTableNameAndColumName);
         valueByTableNameAndColumName = newRow.valueByTableNameAndColumName;
-//        for(Map.Entry<TableNameAndColumnName, Object> concatEntry : concatInternalRow.valueByTableNameAndColumName.entrySet()) {
+//        for(Map.Entry<String, Object> concatEntry : concatInternalRow.valueByTableNameAndColumName.entrySet()) {
 //            if(!concatEntry.getKey().getColumnName().equals("rang")) {
 //                System.out.println("Entry : " + concatEntry.getKey() + " | " + concatEntry.getValue());
 //                valueByTableNameAndColumName.putIfAbsent(concatEntry.getKey(), concatEntry.getValue());
@@ -33,13 +33,13 @@ public class InternalRow {
 //        }
     }
 
-    public Object getValue(TableNameAndColumnName tableNameAndColumnName) {
+    public Object getValue(String tableNameAndColumnName) {
         Object value = valueByTableNameAndColumName.get(tableNameAndColumnName);
         if (value == null) throw new RuntimeException("There is no " + tableNameAndColumnName + " column");
         return value;
     }
 
-    public void setValue(TableNameAndColumnName tableNameAndColumnName, Object value) {
+    public void setValue(String tableNameAndColumnName, Object value) {
         this.valueByTableNameAndColumName.put(tableNameAndColumnName, value);
     }
 

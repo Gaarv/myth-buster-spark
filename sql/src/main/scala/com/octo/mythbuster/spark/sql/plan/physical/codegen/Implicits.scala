@@ -4,7 +4,7 @@ import scala.collection.JavaConverters._
 import com.octo.mythbuster.spark.sql.plan.physical.{ InternalRow => ScalaInternalRow }
 import scala.collection.{ Iterator => ScalaIterator }
 import java.util.{ Iterator => JavaIterator }
-import wrapper.{ InternalRow => JavaInternalRow, TableNameAndColumnName }
+import wrapper.{ InternalRow => JavaInternalRow }
 
 import com.octo.mythbuster.spark.Implicits._
 
@@ -14,7 +14,7 @@ object Implicits {
 
     def wrapForJava(): JavaInternalRow = {
       JavaInternalRow.wrap(internalRow.map({ case ((tableName, columnName),value) =>
-        (TableNameAndColumnName.of(tableName.asJava(), columnName), value.asInstanceOf[AnyRef])
+        (tableName.map(_  + ".").getOrElse("") + columnName, value.asInstanceOf[AnyRef])
       }).asJava)
     }
 
@@ -23,8 +23,11 @@ object Implicits {
   implicit class JavaInternalRowImplicits(internalRow: JavaInternalRow) {
 
     def unwrapForScala(): ScalaInternalRow = {
-      internalRow.unwrap().asScala.toMap.map({ case (tableNameAndColumnName, value) =>
-        ((tableNameAndColumnName.getTableName.asScala, tableNameAndColumnName.getColumnName), value)
+      internalRow.unwrap().asScala.toMap.map({ case (tableNameAndColumnName :String , value) => {
+        val split = tableNameAndColumnName.toString.split(".")
+        val tableColumn = if(split.length  == 2) (Some(split.head), split.last) else (None, tableNameAndColumnName)
+        (tableColumn, value)
+      }
       })
     }
   }
