@@ -30,7 +30,8 @@ object Dependencies {
   val Logging = Logback ++ SLF4J
 
   val ScalaMeter = Seq(
-    "com.storm-enroute" %% "scalameter" % "0.8.2"
+    "com.storm-enroute" %% "scalameter" % "0.8.2",
+    "com.storm-enroute" %% "scalameter-core" % "0.8.2"
   )
 
   val Config = Seq(
@@ -49,6 +50,6 @@ object Dependencies {
 
   val Testing = ScalaTest ++ ScalaMeter ++ ScalaPlot
 
-  val Common = Tooling ++ Logging ++ Configuring ++ (Testing map { _ % "test" })
+  val Common = Tooling ++ Logging ++ Configuring ++ (Testing )
 
 }
