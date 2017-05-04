@@ -199,9 +199,9 @@ case class TableColumn(relationName: RelationName, columnName: ColumnName) exten
 
   override def generateJavaCode(javaVariableName: JavaCode): JavaCode = {
     if(javaVariableName == null)
-      s"""TableNameAndColumnName.of(Optional.of("${relationName}"), "${columnName}")"""
+      "\"" + s"${relationName}.${columnName}" + "\""
     else
-      s"""${javaVariableName}.getValue(TableNameAndColumnName.of(Optional.of("${relationName}"), "${columnName}"))"""
+      s"""${javaVariableName}.getValue("${relationName}.${columnName}")"""
   }
 
 }

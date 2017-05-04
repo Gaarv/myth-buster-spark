@@ -25,21 +25,22 @@ package object example extends App {
   lazy val physicalPlan: PhysicalPlan = QueryPlanner.planQuery(logicalPlan).get
   //println("Physical plan : " + physicalPlan.explain())
 
-  val startTime = System.currentTimeMillis()
+  val startTime = System.nanoTime()
   val resultIterator = Query(sql2).get.fetch()
-  val startExecutionTime = System.currentTimeMillis()
+  val startExecutionTime = System.nanoTime()
   val result = resultIterator.toIndexedSeq
-  val endTime = System.currentTimeMillis()
+  val endTime = System.nanoTime()
   val totalTime = endTime - startTime
   val executionTime = endTime - startExecutionTime
+  val compilationTime = startExecutionTime - startTime
 
-  showRows(result)
+  showRows(result, -1)
 
   println("\n")
-  println("Plan compilation : " + (totalTime - executionTime) /1000 + "s")
-  println("Execution time   : " + (executionTime / 1000) + "s")
+  println("Plan compilation : " + nanoToSeconds(compilationTime) + "s")
+  println("Execution time   : " + nanoToSeconds(executionTime) + "s")
   println("------------------------")
-  println("Total time       : " + (totalTime / 1000) + "s")
+  println("Total time       : " + nanoToSeconds(totalTime) + "s")
 
   val test = IndexedSeq(
     Map("color" -> "yellow", "name" -> "Patrick", "message" -> "hello you"),
@@ -47,7 +48,7 @@ package object example extends App {
     Map("color" -> "dark green", "name" -> "Amy", "message" -> "You are all awesome")
   )
 
-  def showRows(listRows : IndexedSeq[Row]) = {
+  def showRows(listRows : IndexedSeq[Row], limit : Int = -1) = {
     def pad(s : String, length : Int) = s + (" " * Math.max(length - s.length, 0))
 
     if(listRows.isEmpty) {
@@ -65,10 +66,19 @@ package object example extends App {
         pad(column, size) -> results(column).map(pad(_, size))
       }.toMap
       val nbTuples = paddedResults.head._2.length
+      val nbTuplesShown = if(limit > 0) Math.min(nbTuples, limit) else nbTuples
       println(paddedResults.keys.mkString(" ", " | ", " "))
       println(sizes.map(s => "-" * s._2).mkString("-", "-+-", "-"))
-      println((0 until nbTuples).map(i => paddedResults.map(s => s._2(i)).mkString(" ", " | ", " ")).mkString("\n"))
+      println((0 until nbTuplesShown).map(i => paddedResults.map(s => s._2(i)).mkString(" ", " | ", " ")).mkString("\n"))
+      if(limit > 0 && limit < nbTuples) println(s"($limit rows shown)")
     }
+  }
+
+  def nanoToSeconds(nano : Long) : String = {
+    val nanoString = nano.toString
+    val paddedNano = "0" * (10 - nanoString.length) + nanoString
+    val splittedNano = paddedNano.splitAt(paddedNano.length - 9)
+    splittedNano._1 + "," + splittedNano._2
   }
 
 }

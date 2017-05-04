@@ -17,6 +17,9 @@ import com.octo.mythbuster.spark.sql.{expression => e}
 import com.octo.mythbuster.spark.sql.plan.physical.{codegen => c}
 import com.octo.mythbuster.spark.{tree => t}
 import com.octo.mythbuster.spark.compiler.JavaCode
+import com.octo.mythbuster.spark.sql.plan.physical.codegen.Implicits._
+import scala.collection.JavaConverters._
+
 
 // A PhysicalPlan modelize each stage which will be executed during the execution of the query
 trait PhysicalPlan extends Plan[PhysicalPlan] with t.TreeNode[PhysicalPlan] {
@@ -39,14 +42,14 @@ case class CSVFileFullScan(qualifierName: QualifierName, csvFileURL: URL) extend
   val Separator = ";"
 
   override def execute(): Iterator[InternalRow] = {
-    val charSource = Resources.asCharSource(csvFileURL, Charsets.UTF_8)
-    val columnNames = charSource.readFirstLine().split(Separator).map(_.toLowerCase)
-    charSource.readLines().asScala.drop(1)
+    val charSource = scala.io.Source.fromInputStream(csvFileURL.openStream()).getLines()
+    //val charSource = Resources.asCharSource(csvFileURL, Charsets.UTF_8)
+    val columnNames = charSource.next().split(Separator).map(_.toLowerCase)
+    charSource
       .map({ line =>
         columnNames.zip(line.split(Separator)).toMap[String, Any]
       })
       .map(_.toInternalRow(qualifierName))
-      .iterator
   }
 
   override def explain(indent: Int = 0): String = {
@@ -71,8 +74,11 @@ case class Filter(child: PhysicalPlan, expression: e.Expression) extends Physica
   }
 
   override def doConsumeJavaCode(codeGenerationContext: c.JavaCodeGenerationContext, variableName: JavaCode): JavaCode = {
-    s"""if(!(${expression.generateJavaCode(variableName)})) continue;
-       |${consumeJavaCode(codeGenerationContext, variableName)}""".stripMargin
+    s"""
+       |// FILTER
+       |if(!(${expression.generateJavaCode(variableName)})) continue;
+       |${consumeJavaCode(codeGenerationContext, variableName)}
+      """.stripMargin
   }
 
 }
@@ -94,18 +100,6 @@ case class CartesianProduct(leftChild: PhysicalPlan, rightChild: PhysicalPlan) e
        |${rightChild.explain(indent + 1)}""".stripMargin
   }
 
-//  override def doConsumeJavaCode(codeGenerationContext: c.JavaCodeGenerationContext, variableName: JavaCode): JavaCode = {
-//    val currentIterator = codeGenerationContext.iteratorVariable
-//    val currentIterable = codeGenerationContext.iterableVariable
-//    s"""if(!$currentIterator.hasNext) $currentIterator = $currentIterable.iterator;
-//        |while($currentIterator.hasNext) {
-//        |  InternalRow joinedRow = $currentIterator.next();
-//        |  $variableName.concatenate(joinedRow);
-//        |  ${consumeJavaCode(codeGenerationContext, variableName)}
-//        |}
-//        |""".stripMargin
-//  }
-
 }
 
 // The CartesianProduct will do a cartesian product of the two child (by keeping in memory the right one)
@@ -113,10 +107,16 @@ case class Join(leftChild: PhysicalPlan, rightChild: PhysicalPlan, operation : B
 
   override val child = leftChild
 
-  override def execute(): Iterator[InternalRow] = for {
-    leftRow <- leftChild.execute()
-    rightRow <- rightChild.execute().toSeq if operation.evaluate(leftRow ++ rightRow).asInstanceOf[Boolean]
-  } yield leftRow ++ rightRow
+  override def execute(): Iterator[InternalRow] = {
+    val rightHashMap = LazyIteratorToJavaMap(rightChild.execute(), row => operation.rightChild.evaluate(row))
+    leftChild
+      .execute()
+      .flatMap{ row =>
+        val matchedRowOption = Option(rightHashMap.get(operation.leftChild.evaluate(row)))
+        matchedRowOption.map(mrow => mrow.unwrapForScala() ++ row)
+      }
+  }
+
 
   override def explain(indent: Int = 0): String = {
     s"""${"  " * indent}CartesianProduct ${if (supportCodeGeneration()) "*" else ""}
@@ -125,29 +125,28 @@ case class Join(leftChild: PhysicalPlan, rightChild: PhysicalPlan, operation : B
   }
 
   override def doConsumeJavaCode(codeGenerationContext: c.JavaCodeGenerationContext, variableName: JavaCode): JavaCode = {
-    import scala.collection.JavaConverters._
-    import com.octo.mythbuster.spark.sql.plan.physical.codegen.Implicits._
-    val rightIterable : java.lang.Iterable[JavaInternalRow] = new java.lang.Iterable[JavaInternalRow]() {
-      lazy val data : Seq[InternalRow] = rightChild.execute().toSeq
+    val rightJoinMap = LazyIteratorToJavaMap(rightChild.execute(), row => operation.rightChild.evaluate(row))
+    val hashMapInputRows = codeGenerationContext.addReference(rightJoinMap, "LazyIteratorToJavaMap<String>")
 
-      override def iterator(): util.Iterator[JavaInternalRow] = data.toIterator.wrapForJava()
-    }
-    val joinedIterableVariable = codeGenerationContext.addReference(rightIterable, "Iterable<InternalRow>")
-    val currentIterator =  codeGenerationContext.iteratorVariable
-    Iterable().iterator
-    s"""Iterator<InternalRow> $currentIterator = $joinedIterableVariable.iterator();
-        |while($currentIterator.hasNext()) {
-        |  InternalRow joinedRow = $currentIterator.next();
-        |
-        |  if(!((${operation.rightChild.generateJavaCode("joinedRow")}).toString().equals((${operation.leftChild.generateJavaCode(variableName)}).toString()))) continue;
-        ||
-        |     $variableName.concatenate(joinedRow);
-        |     ${consumeJavaCode(codeGenerationContext, variableName)}
-        |     break;
-        |}
+    s"""
+        |// JOIN
+        |InternalRow matchedRow = $hashMapInputRows.get(${operation.leftChild.generateJavaCode(variableName)});
+        |if(matchedRow == null) continue;
+        |$variableName.concatenate(matchedRow);
+        |${consumeJavaCode(codeGenerationContext, variableName)}
         |""".stripMargin
   }
 
+}
+
+case class LazyIteratorToJavaMap[KeyType](it : scala.collection.Iterator[InternalRow], keyBuilder : InternalRow => KeyType) {
+  lazy val evaluatedMap = it
+      .toSeq
+      .map(row => keyBuilder(row) -> row.wrapForJava)
+      .toMap[KeyType, JavaInternalRow]
+      .asJava
+
+  def get(key : Any) = evaluatedMap.get(key.asInstanceOf[KeyType])
 }
 
 // The projection will map the InternalRows by applying the expressions
@@ -173,15 +172,22 @@ case class Projection(child: PhysicalPlan, expressions : Seq[e.Expression]) exte
     val arrayVariableName = codeGenerationContext.freshVariableName()
     codeGenerationContext.addClassAttribute(
       name = arrayVariableName,
-      typeName = "TableNameAndColumnName[]",
-      initCode = s"new TableNameAndColumnName[] {${expressions.map(_.generateJavaCode(null)).mkString(",")}}"
+      typeName = "String[]",
+      initCode = s"new String[] {${expressions.map(_.generateJavaCode(null)).mkString(",")}}"
     )
 
+    val projections = expressions
+      .map(_.generateJavaCode(null))
+
+    val projectionsCode = projections
+      .map(c => s"${internalRowWithProjection}.setValue($c, $variableName.getValue($c));")
+      .mkString("\n")
+
+
     s"""
+      |// PROJECTION over ${projections.mkString(",")}
       |InternalRow ${internalRowWithProjection} = InternalRow.create();
-      |for(TableNameAndColumnName column : ${arrayVariableName}) {
-      |  ${internalRowWithProjection}.setValue(column, $variableName.getValue(column));
-      |}
+      |$projectionsCode
       |currentRows.add(${internalRowWithProjection});
     """.stripMargin
   }
