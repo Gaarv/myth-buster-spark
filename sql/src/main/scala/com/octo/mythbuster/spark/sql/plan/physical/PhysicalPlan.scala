@@ -9,6 +9,7 @@ import com.google.common.io.Resources
 import com.octo.mythbuster.spark.sql.expression.BinaryOperation
 import com.octo.mythbuster.spark.sql.plan.physical.codegen.wrapper.{InternalRow => JavaInternalRow}
 
+import com.octo.mythbuster.spark.Implicits._
 import scala.util.{Failure, Success}
 import com.octo.mythbuster.spark.sql._
 import com.octo.mythbuster.spark.sql.plan.Plan
@@ -42,10 +43,14 @@ case class CSVFileFullScan(qualifierName: QualifierName, csvFileURL: URL) extend
   val Separator = ";"
 
   override def execute(): Iterator[InternalRow] = {
-    val charSource = scala.io.Source.fromInputStream(csvFileURL.openStream()).getLines()
+    val charSource = scala.io.Source.fromURL(csvFileURL)
+    val charSourceSeq = charSource.getLines().onEnd({ charSource.close() })//.toSeq // FIXME: Close InputStream on last item
+    //inputStream.close()
+
+    var charSourceIterator = charSourceSeq//.iterator
     //val charSource = Resources.asCharSource(csvFileURL, Charsets.UTF_8)
-    val columnNames = charSource.next().split(Separator).map(_.toLowerCase)
-    charSource
+    val columnNames = charSourceIterator.next().split(Separator).map(_.toLowerCase)
+    charSourceIterator
       .map({ line =>
         columnNames.zip(line.split(Separator)).toMap[String, Any]
       })

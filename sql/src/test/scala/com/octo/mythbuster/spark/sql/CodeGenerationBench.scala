@@ -3,7 +3,7 @@ package com.octo.mythbuster.spark.sql
 import java.nio.file.{Files, Paths, StandardOpenOption}
 
 import com.google.common.base.Charsets
-import com.google.common.io.Resources
+import com.google.common.io.{CharSource, Resources}
 import com.octo.mythbuster.spark.{Logging, Resource}
 import com.typesafe.config.ConfigFactory
 import org.scalameter.api._
@@ -13,22 +13,38 @@ import scala.collection.JavaConverters._
 object CodeGenerationBench extends QueryBench[(Int, Int)] with Logging {
 
   val TableRowCounts = for {
-    leftTableCount <- Gen.range("leftTableRowCount")(0, 10000, 500)
-    rightTableCount <- Gen.range("rightTableRowCount")(0, 300, 15)
+    leftTableCount <- Gen.range("Left Table Row Count")(0, 2000, 200)
+    rightTableCount <- Gen.range("Right Table Row Count")(0, 30, 3)
   } yield (leftTableCount, rightTableCount)
 
+  generateTables
 
-
-  performance of "Code" in {
-
-    generateTables
+  performance of "SQL Query" in {
 
     measure method "With Code Generation" in {
-      using(TableRowCounts) in query(Query.ConfigWithCodeGeneration)
+
+      var query: Query = null
+
+      using(TableRowCounts)
+        .setUp({ case (leftTableRowCount, rightTableRowCount) =>
+          query = Query(sql((leftTableRowCount, rightTableRowCount)), Query.ConfigWithCodeGeneration).get
+        })
+        .in({ params =>
+          println(params)
+          query.fetch().foreach({ _ => })
+        })
     }
 
     measure method "Without Code Generation" in {
-      using(TableRowCounts) in query(Query.ConfigWithoutCodeGeneration)
+      var query: Query = null
+      using(TableRowCounts)
+        .setUp({ case (leftTableRowCount, rightTableRowCount) =>
+          query = Query(sql((leftTableRowCount, rightTableRowCount)), Query.ConfigWithoutCodeGeneration).get
+        })
+        .in({ params =>
+          println(params)
+          query.fetch().foreach({ _ => })
+        })
     }
   }
 
@@ -51,7 +67,7 @@ object CodeGenerationBench extends QueryBench[(Int, Int)] with Logging {
   private def generateTables: Unit = {
     TableRowCounts.dataset
       .map({ params =>
-        (params[Int]("leftTableRowCount"), params[Int]("rightTableRowCount"))
+        (params[Int]("Left Table Row Count"), params[Int]("Right Table Row Count"))
       })
       .flatMap({ case (leftTableRowCount, rightTableRowCount) =>
           Seq(
@@ -64,10 +80,10 @@ object CodeGenerationBench extends QueryBench[(Int, Int)] with Logging {
       })
       .foreach({ case (tableName, tableRowCount) =>
         Resource(s"${tableName}.csv") match {
-          case Some(csvFileURL) => {
+          case Some(csvFileUrl) => {
             logger.debug("Generating {} table with only {} rows", tableName, tableRowCount)
-            val lines = Resources.asCharSource(csvFileURL, Charsets.UTF_8).readLines().asScala.take(tableRowCount + 1).asJava
-            Files.write(Paths.get("target/scala-2.12/test-classes").resolve(s"${tableName}_${tableRowCount}.csv"), lines, StandardOpenOption.CREATE)
+            val lines = Resources.asCharSource(csvFileUrl, Charsets.UTF_8).readLines().asScala.take(tableRowCount + 1)
+            Files.write(Paths.get("target/scala-2.12/test-classes").resolve(s"${tableName}_${tableRowCount}.csv"), lines.asJava, StandardOpenOption.CREATE)
           }
           case None => throw new Exception("Unable to generate table")
         }

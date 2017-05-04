@@ -1,6 +1,5 @@
 package com.octo.mythbuster.spark.sql
 
-import com.octo.mythbuster.spark.sql.CodeGenerationBench.sql
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalameter.Reporter.Composite
 import org.scalameter.{Aggregator, Measurer}
@@ -28,7 +27,7 @@ abstract class QueryBench[P] extends Local[Double] {
 
   def query(config: Config = ConfigFactory.load()): P => Unit = { params =>
     Query(sql(params), config) match {
-      case Success(query) => query
+      case Success(query) => query.fetch().foreach({ _ => })
       case Failure(e) => throw e
     }
   }

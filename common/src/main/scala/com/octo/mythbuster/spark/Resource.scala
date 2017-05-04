@@ -2,6 +2,7 @@ package com.octo.mythbuster.spark
 
 import java.net.URL
 
+import Implicits._
 import com.google.common.io.Resources
 
 import scala.util.Try
