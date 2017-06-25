@@ -34,6 +34,8 @@ case class LeftParenthesis() extends Token
 
 case class RightParenthesis() extends Token
 
+case class Star() extends Token
+
 sealed trait Literal[A] extends Token {
 
   val value: A

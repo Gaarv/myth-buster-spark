@@ -6,6 +6,6 @@ trait Logging {
 
   val loggerName: Option[String] = None
 
-  val logger: Logger = LoggerFactory.getLogger(loggerName.getOrElse(getClass.getSimpleName))
+  val logger: Logger = LoggerFactory.getLogger(loggerName.getOrElse(getClass.getName))
 
 }

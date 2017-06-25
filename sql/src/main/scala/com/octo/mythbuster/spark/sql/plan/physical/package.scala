@@ -16,4 +16,6 @@ package object physical {
 
   }
 
+  val t: Iterator
+
 }

@@ -60,6 +60,8 @@ object Parser extends Parsers {
 
   def number = { accept("number", { case number @ l.Number(value) => value }) } ^^ { value => e.Number(value) }
 
+  def selectStar = { l.Select() ~> l.Star() ~ relations ~ ( where ? ) } ^^ { case _ ~ relations ~ filter => SelectStar(filter, relations) }
+
   def select = { l.Select() ~> projections ~ relations ~ ( where ? ) } ^^ { case projections ~ relations ~ filter => Select(projections, filter, relations) }
 
   def from = l.From() ~> relations
@@ -91,7 +93,7 @@ object Parser extends Parsers {
 
   def join = { relation ~ l.Join() ~ table ~ l.On() ~ equal } ^^ { case leftRelation ~ _ ~ rightRelation ~ _ ~ filter => Join(filter, leftRelation, rightRelation) }
 
-  def ast: Parser[AST] = select
+  def ast: Parser[AST] = selectStar | select
 
   def apply(tokens: Seq[l.Token]): u.Try[AST] = {
     val reader = new TokenReader(tokens)

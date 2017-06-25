@@ -12,22 +12,26 @@ lazy val commonSettings = Seq(
 
 lazy val root = (project in file("."))
   .settings(commonSettings)
-  .settings(name := "spark")
-  .aggregate(common, compiler, sql)
+  .settings(name := "mythbuster-spark")
+  .aggregate(common, compiler, sql, example)
 
 lazy val common = (project in file("common"))
   .settings(commonSettings)
-  .settings(name := "spark-common")
+  .settings(name := "common")
 
 lazy val compiler = (project in file("compiler"))
   .settings(commonSettings)
-  .settings(name := "spark-compiler")
+  .settings(name := "compiler")
   .settings(initialCommands in console := "import com.octo.mythbuster.spark.compiler._")
   .dependsOn(common % "test->test;compile->compile")
 
+lazy val jvmBenchmark = (project in file("jvm-benchmark"))
+  .settings(name := "jvm-benchmark")
+  .enablePlugins(JmhPlugin)
+
 lazy val sql = (project in file("sql"))
   .settings(commonSettings)
-  .settings(name := "spark-sql")
+  .settings(name := "sql")
   .settings(libraryDependencies ++= Dependencies.Parsing)
   .settings(initialCommands in console :=
     """
@@ -38,3 +42,8 @@ lazy val sql = (project in file("sql"))
       |import com.octo.mythbuster.spark.example._
     """.stripMargin)
   .dependsOn(common % "test->test;compile->compile", compiler)
+
+lazy val example = (project in file("example"))
+  .settings(commonSettings)
+  .settings(name := "example")
+  .dependsOn(sql)

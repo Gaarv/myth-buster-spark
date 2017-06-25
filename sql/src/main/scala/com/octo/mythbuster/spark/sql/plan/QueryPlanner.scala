@@ -21,17 +21,20 @@ object QueryPlanner {
   protected def doPlanQuery(logicalPlan: l.LogicalPlan): p.PhysicalPlan = logicalPlan match {
     case l.Projection(child, expressions) => p.Projection(doPlanQuery(child), expressions)
     case l.CartesianProduct(leftChild, rightChild) => p.CartesianProduct(doPlanQuery(leftChild), doPlanQuery(rightChild))
-    case l.Join(leftChild, rightChild, operation) => p.Join(doPlanQuery(leftChild), doPlanQuery(rightChild), operation)
+    case l.Join(leftChild, rightChild, filter) => p.NestedLoopJoin(doPlanQuery(leftChild), doPlanQuery(rightChild), filter)
 
     case l.Filter(child, expression: e.Expression) => p.Filter(doPlanQuery(child), expression)
 
-    case l.TableScan(tableName: l.TableName, aliasName: Option[RelationName]) => {
+    case l.TableScan(tableName: l.TableName, aliasName: Option[RelationName]) =>
       val qualifierName = aliasName.getOrElse(tableName)
       Resource(s"${tableName}.csv") match {
         case Some(csvFileURL) => p.CSVFileFullScan(qualifierName, csvFileURL)
         case None => throw new IllegalArgumentException(s"Unable to find CSV file for ${tableName} table")
       }
-    }
+
+    case l.AllProjections(child) => p.AllProjections(doPlanQuery((child)))
+
+
     case _ => throw new IllegalArgumentException(s"Unable to plan query because ${logicalPlan} needs to be a projection")
   }
 
