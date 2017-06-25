@@ -47,14 +47,9 @@ class TreeSpec extends UnitSpec {
   }
 
   "The original AST" should "be factorizable" in {
-    val transformedAST = expression.transformDown {
-      case Add(Multiply(a, b), Multiply(c, d)) => (a, b, c, d) match {
-        case _ if a == c => Multiply(a, Add(b, d))
-        case _ if a == d => Multiply(a, Add(b, c))
-        case _ if b == c => Multiply(b, Add(a, d))
-        case _ if b == d => Multiply(b, Add(a, c))
-      }
-    }
+    val transformedAST = originalAST.transformDown({
+      case Factorize(factorizedAST) => factorizedAST
+    })
 
     transformedAST should be(factorizedAST)
   }
