@@ -237,11 +237,6 @@ case class Projection(child: PhysicalPlan, expressions : Seq[e.Expression]) exte
   override def doConsumeJavaCode(codeGenerationContext: c.JavaCodeGenerationContext, variableName: JavaCode): JavaCode = {
     val internalRowWithProjection = codeGenerationContext.freshVariableName()
     val arrayVariableName = codeGenerationContext.freshVariableName()
-    codeGenerationContext.addClassAttribute(
-      name = arrayVariableName,
-      typeName = "String[]",
-      initCode = s"new String[] {${expressions.map(_.generateJavaCode(null)).mkString(",")}}"
-    )
 
     val projections = expressions
       .map(_.generateJavaCode(null))

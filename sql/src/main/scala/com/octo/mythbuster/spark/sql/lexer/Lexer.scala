@@ -19,7 +19,7 @@ object Lexer extends RegexParsers {
 
   def identifier: Parser[Identifier] = positioned { "[a-z_][a-z0-9_]*".r ^^  { value => Identifier(value) } }
 
-  def number: Parser[Number] = positioned { "[0-9]+(\\.[0-9]+)?".r ^^ { value => Number(value.toFloat) } }
+  def number: Parser[Number] = positioned { "[-]?[0-9]+(\\.[0-9]+)?".r ^^ { value => Number(value.toFloat) } }
 
   def text: Parser[Text] = positioned { "'.*?'".r ^^ { value => Text(value.substring(1, value.length - 1)) } }
 
@@ -39,7 +39,7 @@ object Lexer extends RegexParsers {
 
   def `true`: Parser[True] = positioned { "TRUE" ^^ { _ => True() } }
 
-  def `false`: Parser[False] = positioned { "TRUE" ^^ { _ => False() } }
+  def `false`: Parser[False] = positioned { "FALSE" ^^ { _ => False() } }
 
   def leftParenthesis: Parser[LeftParenthesis] = positioned { "(" ^^ { _ => LeftParenthesis() } }
 
