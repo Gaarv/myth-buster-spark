@@ -20,11 +20,11 @@ public class InternalRow {
         return valueByTableNameAndColumName;
     }
 
-    public void concatenate(InternalRow concatInternalRow) {
-        InternalRow newRow = create();
-        newRow.valueByTableNameAndColumName.putAll(valueByTableNameAndColumName);
-        newRow.valueByTableNameAndColumName.putAll(concatInternalRow.valueByTableNameAndColumName);
-        valueByTableNameAndColumName = newRow.valueByTableNameAndColumName;
+    public InternalRow concatenate(InternalRow that) {
+        InternalRow concatenatedInternalRow = create();
+        concatenatedInternalRow.valueByTableNameAndColumName.putAll(this.valueByTableNameAndColumName);
+        concatenatedInternalRow.valueByTableNameAndColumName.putAll(that.valueByTableNameAndColumName);
+        return concatenatedInternalRow;
 //        for(Map.Entry<String, Object> concatEntry : concatInternalRow.valueByTableNameAndColumName.entrySet()) {
 //            if(!concatEntry.getKey().getColumnName().equals("rang")) {
 //                System.out.println("Entry : " + concatEntry.getKey() + " | " + concatEntry.getValue());
@@ -35,7 +35,7 @@ public class InternalRow {
 
     public Object getValue(String tableNameAndColumnName) {
         Object value = valueByTableNameAndColumName.get(tableNameAndColumnName);
-        if (value == null) throw new RuntimeException("There is no " + tableNameAndColumnName + " column");
+        if (value == null) throw new RuntimeException("There is no " + tableNameAndColumnName + " column in " + this.valueByTableNameAndColumName);
         return value;
     }
 

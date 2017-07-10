@@ -6,6 +6,8 @@ import com.octo.mythbuster.spark.sql.plan.physical.PhysicalPlan
 
 object GenerateJavaCode extends Rule[PhysicalPlan] with Logging {
 
+  override val name = "GenerateJavaCode"
+
   override def apply(physicalPlan: PhysicalPlan) = insertCodeGeneration(physicalPlan)
 
   // We wrap every

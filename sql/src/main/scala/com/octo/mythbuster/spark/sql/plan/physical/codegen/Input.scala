@@ -13,6 +13,7 @@ case class Input(child: p.PhysicalPlan) extends p.PhysicalPlan with t.UnaryTreeN
       |while (hasNextChildRow()) {
       |  InternalRow ${variableName} = nextChildRow();
       |  ${consumeJavaCode(codeGenerationContext, variableName)}
+      |
       |  if (!shouldContinue()) return;
       |}
      """.stripMargin

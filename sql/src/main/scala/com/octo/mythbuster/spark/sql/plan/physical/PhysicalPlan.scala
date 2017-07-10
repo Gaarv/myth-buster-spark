@@ -86,11 +86,11 @@ case class Filter(child: PhysicalPlan, expression: e.Expression) extends Physica
        |${child.explain(indent + 1)}""".stripMargin
   }
 
-  override def doConsumeJavaCode(codeGenerationContext: c.JavaCodeGenerationContext, variableName: JavaCode): JavaCode = {
+  override def doConsumeJavaCode(codeGenerationContext: c.JavaCodeGenerationContext, rowVariableName: JavaCode): JavaCode = {
     s"""
-       |// FILTER
-       |if(!(${expression.generateJavaCode(variableName)})) continue;
-       |${consumeJavaCode(codeGenerationContext, variableName)}
+       |/* Filter ${child} using ${expression} */
+       |if(!(${expression.generateJavaCode(rowVariableName)})) continue;
+       |${consumeJavaCode(codeGenerationContext, rowVariableName)}
       """.stripMargin
   }
 
@@ -135,20 +135,22 @@ case class NestedLoopJoin(leftChild: PhysicalPlan, rightChild: PhysicalPlan, fil
 }
 
 // This HashJoin will only works if the need column by the leftExpression are provided by the leftChild
-case class HashJoin(leftChild: PhysicalPlan, rightChild: PhysicalPlan, filter: e.BinaryOperation) extends PhysicalPlan with t.BinaryTreeNode[PhysicalPlan] {
+case class HashJoin(leftChild: PhysicalPlan, rightChild: PhysicalPlan, filter: e.BinaryOperation) extends PhysicalPlan with t.BinaryTreeNode[PhysicalPlan] with JavaCodeGenerationSupport {
+
+  type Index[Type] = Map[Type, Seq[InternalRow]]
+
+  val child = rightChild
+
   override def execute(): Iterator[InternalRow] = {
     filter match {
       case e.Equal(leftExpression: e.Expression, rightExpression: e.Expression) =>
         // We index the left part of the physical plan by the filter
-        val index = leftChild.execute()
-          .toSeq
-          .groupBy(leftExpression.evaluate)
-          .map({ case (k, v) => (k.asInstanceOf[rightExpression.Type], v) }) // Some checks need to be done, here!
+        val leftChildIndex = index[rightExpression.Type](leftChild, leftExpression)
 
         // We loop over the right part and we lookup the indexed right part of the physical plan
         for {
           rightRow <- rightChild.execute()
-          leftRow <- index.get(rightExpression.evaluate(rightRow)).getOrElse(Seq())
+          leftRow <- leftChildIndex.get(rightExpression.evaluate(rightRow)).getOrElse(Seq())
         } yield leftRow ++ rightRow
 
       // It's actually a simple case: we only need to reverse the left and right predicates
@@ -157,58 +159,47 @@ case class HashJoin(leftChild: PhysicalPlan, rightChild: PhysicalPlan, filter: e
 
   }
 
+  private def index[Type](physicalPlan: PhysicalPlan, expression: e.Expression): Index[Type] = {
+    physicalPlan.execute()
+        .toSeq
+        .groupBy(internalRow => expression.evaluate(internalRow))
+        .map({ case (k, v) => (k.asInstanceOf[Type], v) }) // Some checks need to be done, here!
+  }
+
+  override def doConsumeJavaCode(codeGenerationContext: c.JavaCodeGenerationContext, rightRowVariableName: JavaCode): JavaCode = {
+    filter match {
+      case e.Equal(leftExpression: e.Expression, rightExpression: e.Expression) =>
+        val leftIndexAsJava = index[rightExpression.Type](leftChild, leftExpression)
+            .mapValues(_.map(_.wrapForJava).asJava)
+            .asJava
+
+        val leftIndexAsJavaVariableName = codeGenerationContext.addReference(leftIndexAsJava, "Map<Object, List<InternalRow>>")
+
+        val leftRowsVariableName = codeGenerationContext.freshVariableName()
+        val leftRowVariableName = codeGenerationContext.freshVariableName()
+        val rowVariableName = codeGenerationContext.freshVariableName()
+
+        s"""
+           |/* HashJoin between ${leftChild} and ${rightChild} on ${filter} */
+           |List<InternalRow> ${leftRowsVariableName} = ${leftIndexAsJavaVariableName}.get(${rightExpression.generateJavaCode(rightRowVariableName)});
+           |if(${leftRowsVariableName} == null) continue;
+           |for (InternalRow ${leftRowVariableName} : ${leftRowsVariableName}) {
+           |  InternalRow ${rowVariableName} = ${rightRowVariableName}.concatenate(${leftRowVariableName});
+           |  ${consumeJavaCode(codeGenerationContext, rowVariableName)}
+           |}
+           |""".stripMargin
+
+      case _ =>
+        throw new PhysicalPlanException("That's not possible, dude... The filter is too complex, I guess")
+    }
+
+  }
+
   override def explain(indent: Int): String = ???
 
 }
 
-// The CartesianProduct will do a cartesian product of the two child (by keeping in memory the right one)
-case class Join(leftChild: PhysicalPlan, rightChild: PhysicalPlan, operation: BinaryOperation) extends PhysicalPlan with t.BinaryTreeNode[PhysicalPlan] with JavaCodeGenerationSupport {
-
-  override val child = leftChild
-
-  override def execute(): Iterator[InternalRow] = {
-    val rightHashMap = LazyIteratorToJavaMap(rightChild.execute(), row => operation.rightChild.evaluate(row))
-    leftChild
-      .execute()
-      .flatMap{ row =>
-        val matchedRowOption = Option(rightHashMap.get(operation.leftChild.evaluate(row)))
-        matchedRowOption.map(mrow => mrow.unwrapForScala() ++ row)
-      }
-  }
-
-
-  override def explain(indent: Int = 0): String = {
-    s"""${"  " * indent}CartesianProduct ${if (supportCodeGeneration()) "*" else ""}
-       |${leftChild.explain(indent + 1)}
-       |${rightChild.explain(indent + 1)}""".stripMargin
-  }
-
-  override def doConsumeJavaCode(codeGenerationContext: c.JavaCodeGenerationContext, variableName: JavaCode): JavaCode = {
-    val rightJoinMap = LazyIteratorToJavaMap(rightChild.execute(), row => operation.rightChild.evaluate(row))
-    val hashMapInputRows = codeGenerationContext.addReference(rightJoinMap, "LazyIteratorToJavaMap<String>")
-
-    s"""
-        |// JOIN
-        |InternalRow matchedRow = $hashMapInputRows.get(${operation.leftChild.generateJavaCode(variableName)});
-        |if(matchedRow == null) continue;
-        |$variableName.concatenate(matchedRow);
-        |${consumeJavaCode(codeGenerationContext, variableName)}
-        |""".stripMargin
-  }
-
-}
-
-case class LazyIteratorToJavaMap[KeyType](it : scala.collection.Iterator[InternalRow], keyBuilder : InternalRow => KeyType) {
-  lazy val evaluatedMap = it
-      .toSeq
-      .map(row => keyBuilder(row) -> row.wrapForJava)
-      .toMap[KeyType, JavaInternalRow]
-      .asJava
-
-  def get(key : Any) = evaluatedMap.get(key.asInstanceOf[KeyType])
-}
-
-case class AllProjections(child: PhysicalPlan) extends PhysicalPlan with t.UnaryTreeNode[PhysicalPlan] {
+case class AllProjections(child: PhysicalPlan) extends PhysicalPlan with t.UnaryTreeNode[PhysicalPlan] with JavaCodeGenerationSupport {
 
   override def execute(): Iterator[InternalRow] = child.execute()
 
@@ -234,23 +225,27 @@ case class Projection(child: PhysicalPlan, expressions : Seq[e.Expression]) exte
        |${child.explain(indent + 1)}""".stripMargin
   }
 
-  override def doConsumeJavaCode(codeGenerationContext: c.JavaCodeGenerationContext, variableName: JavaCode): JavaCode = {
-    val internalRowWithProjection = codeGenerationContext.freshVariableName()
-    val arrayVariableName = codeGenerationContext.freshVariableName()
+  override def doConsumeJavaCode(codeGenerationContext: c.JavaCodeGenerationContext, rowVariableName: JavaCode): JavaCode = {
+    val newRowVariableName = codeGenerationContext.freshVariableName()
 
-    val projections = expressions
-      .map(_.generateJavaCode(null))
-
-    val projectionsCode = projections
-      .map(c => s"${internalRowWithProjection}.setValue($c, $variableName.getValue($c));")
+    val projectionCode = expressions.zipWithIndex
+      .map({ case (expression, index) =>
+        (expression match {
+          case e.NamedExpression(name) => (name)
+          case _ => (s"column_${index}")
+        }) -> expression.generateJavaCode(rowVariableName)
+      })
+      .map({ case (columnName, valueJavaCode) =>
+        s"""${newRowVariableName}.setValue("${columnName}", ${valueJavaCode});"""
+      })
       .mkString("\n")
 
-
     s"""
-      |// PROJECTION over ${projections.mkString(",")}
-      |InternalRow ${internalRowWithProjection} = InternalRow.create();
-      |$projectionsCode
-      |currentRows.add(${internalRowWithProjection});
+      |/* Projection over ${expressions.mkString(",")} */
+      |InternalRow ${newRowVariableName} = InternalRow.create();
+      |${projectionCode}
+      |
+      |${consumeJavaCode(codeGenerationContext, newRowVariableName)}
     """.stripMargin
   }
 

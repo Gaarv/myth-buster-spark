@@ -13,7 +13,7 @@ import scala.util.Try
 
 object Query extends Logging {
 
-  val ConfigWithCodeGeneration = ConfigFactory.load().withValue("shouldGenerateCode", ConfigValueFactory.fromAnyRef(false))
+  val ConfigWithCodeGeneration = ConfigFactory.load().withValue("shouldGenerateCode", ConfigValueFactory.fromAnyRef(true))
 
   val ConfigWithoutCodeGeneration = ConfigFactory.load().withValue("shouldGenerateCode", ConfigValueFactory.fromAnyRef(false))
 

@@ -10,7 +10,9 @@ object SQL extends App {
   val sql =
     """
       |SELECT
-      |  *
+      |  p.pedestrian_count,
+      |  v.subway_station_name,
+      |  3 > 2
       |FROM
       |  pedestrians_in_nation p
       |JOIN
@@ -23,11 +25,13 @@ object SQL extends App {
       |  AND v.validation_type = 'NAVIGO'
     """.stripMargin
 
-  Query(sql, ConfigWithoutCodeGeneration) match {
+  val config = ConfigWithCodeGeneration
+  Query(sql, config) match {
     case Success(query) =>
       query.fetchAsCSV().foreach(println)
 
-    case Failure(e) => e.printStackTrace(Console.out)
+    case Failure(e) =>
+      e.printStackTrace(Console.out)
   }
 
 }

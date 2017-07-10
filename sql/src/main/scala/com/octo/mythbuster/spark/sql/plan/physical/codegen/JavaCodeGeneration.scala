@@ -30,11 +30,11 @@ case class JavaCodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with
       s"""package ${packageName};
          |
          |import java.util.Iterator;
+         |import java.util.List;
          |import java.io.IOException;
          |import java.util.Map;
          |import com.octo.mythbuster.spark.sql.plan.physical.codegen.wrapper.CodeGeneratedInternalRowIterator;
          |import com.octo.mythbuster.spark.sql.plan.physical.codegen.wrapper.InternalRow;
-         |import com.octo.mythbuster.spark.sql.plan.physical.LazyIteratorToJavaMap;
          |import java.util.LinkedList;
          |import java.util.HashMap;
          |import java.util.Optional;
@@ -87,7 +87,7 @@ case class JavaCodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with
 
   override def doConsumeJavaCode(codeGenerationContext: JavaCodeGenerationContext, rowVariableName: JavaCode): JavaCode = {
     s"""
-       |append(${rowVariableName});
+       |addToCurrentRow(${rowVariableName});
      """.stripMargin.trim
   }
 

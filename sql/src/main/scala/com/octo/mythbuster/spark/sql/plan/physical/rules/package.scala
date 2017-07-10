@@ -17,6 +17,8 @@ package object rules {
   // When the filter is Equal, then it replace the NestedLoopJoin by a HashJoin (but it may fail has we do not check the presence of the columns)
   object UseHashJoin extends Rule[PhysicalPlan] with Logging {
 
+    override val name = "UseHashJoin"
+
     override def apply(physicalPlan: PhysicalPlan): PhysicalPlan = physicalPlan.transformDown {
       case NestedLoopJoin(leftChild, rightChild, filter: e.Equal) =>
         logger.debug(s"The NestedLoopJoin between ${leftChild} and ${rightChild} on ${filter} can be replaced by an HashJoin")
