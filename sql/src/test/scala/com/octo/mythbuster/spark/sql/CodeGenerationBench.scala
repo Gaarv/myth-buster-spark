@@ -13,8 +13,8 @@ import scala.collection.JavaConverters._
 object CodeGenerationBench extends QueryBench[(Int, Int)] with Logging {
 
   val TableRowCounts = for {
-    leftTableCount <- Gen.range("Left Table Row Count")(0, 2000, 200)
-    rightTableCount <- Gen.range("Right Table Row Count")(0, 30, 3)
+    leftTableCount <- Gen.range("Left Table Row Count")(0, 6000, 500)
+    rightTableCount <- Gen.range("Right Table Row Count")(0, 200000, 50000)
   } yield (leftTableCount, rightTableCount)
 
   generateTables
@@ -30,7 +30,6 @@ object CodeGenerationBench extends QueryBench[(Int, Int)] with Logging {
           query = Query(sql((leftTableRowCount, rightTableRowCount)), Query.ConfigWithCodeGeneration).get
         })
         .in({ params =>
-          println(params)
           query.fetch().foreach({ _ => })
         })
     }
@@ -39,29 +38,32 @@ object CodeGenerationBench extends QueryBench[(Int, Int)] with Logging {
       var query: Query = null
       using(TableRowCounts)
         .setUp({ case (leftTableRowCount, rightTableRowCount) =>
-          query = Query(sql((leftTableRowCount, rightTableRowCount)), Query.ConfigWithoutCodeGeneration).get
+          val generatedSQL = sql((leftTableRowCount, rightTableRowCount))
+          println(generatedSQL)
+          query = Query(generatedSQL, Query.ConfigWithoutCodeGeneration).get
         })
         .in({ params =>
-          println(params)
           query.fetch().foreach({ _ => })
         })
     }
   }
 
   def sql = { case (leftTableCount, rightTableCount) =>
-    s"""
-       |SELECT
-       |  t.station,
-       |  t.trafic,
-       |  t.reseau,
-       |  p.coord
-       |FROM
-       |  positions_${leftTableCount} p
-       |JOIN
-       |  trafic_${rightTableCount} t
-       |ON
-       |  p.stop_name = t.station
-     """.stripMargin
+      s"""
+        |SELECT
+        |  p.pedestrian_count,
+        |  v.subway_station_name
+        |FROM
+        |  pedestrians_in_nation_${leftTableCount} p
+        |JOIN
+        |  validations_${rightTableCount} v
+        |ON
+        |      p.day = v.day
+        |WHERE
+        |      v.subway_station_name = 'NATION'
+        |  AND p.day = '2016-12-25'
+        |  AND v.validation_type = 'NAVIGO'
+      """.stripMargin
   }
 
   private def generateTables: Unit = {
@@ -71,8 +73,8 @@ object CodeGenerationBench extends QueryBench[(Int, Int)] with Logging {
       })
       .flatMap({ case (leftTableRowCount, rightTableRowCount) =>
           Seq(
-            ("positions", leftTableRowCount),
-            ("trafic", rightTableRowCount)
+            ("pedestrians_in_nation", leftTableRowCount),
+            ("validations", rightTableRowCount)
           )
       })
       .filter({ case (tableName, tableRowCount) =>

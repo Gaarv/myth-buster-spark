@@ -11,8 +11,7 @@ object SQL extends App {
     """
       |SELECT
       |  p.pedestrian_count,
-      |  v.subway_station_name,
-      |  3 > 2
+      |  v.subway_station_name
       |FROM
       |  pedestrians_in_nation p
       |JOIN

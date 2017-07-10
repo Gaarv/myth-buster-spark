@@ -52,7 +52,7 @@ case class CSVFileFullScan(qualifierName: QualifierName, csvFileURL: URL) extend
 
   override def execute(): Iterator[InternalRow] = {
     val charSource = scala.io.Source.fromURL(csvFileURL)
-    val charSourceSeq = charSource.getLines().onEnd({ charSource.close() })//.toSeq // FIXME: Close InputStream on last item
+    val charSourceSeq = charSource.getLines()//.toSeq // FIXME: Close InputStream on last item
     //inputStream.close()
 
     var charSourceIterator = charSourceSeq//.iterator
