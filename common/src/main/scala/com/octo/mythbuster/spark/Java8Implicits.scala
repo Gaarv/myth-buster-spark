@@ -1,6 +1,7 @@
 package com.octo.mythbuster.spark
 
 import java.util.{ Optional => JavaOptional }
+import java.util.function.{ Supplier => JavaSupplier }
 
 trait Java8Implicits {
 
@@ -16,6 +17,14 @@ trait Java8Implicits {
     def asJava(): JavaOptional[T] = option match {
       case Some(t) => JavaOptional.of(t)
       case None => JavaOptional.empty()
+    }
+
+  }
+
+  implicit class Function0Java8Implicits[T](f: () => T) {
+
+    def asJava(): JavaSupplier[T] = {
+      () => f()
     }
 
   }

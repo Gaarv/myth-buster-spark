@@ -15,6 +15,8 @@ object JavaCodeGeneration extends Caching[JavaClassSource, Iterator[p.InternalRo
 
 case class JavaCodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with t.UnaryTreeNode[p.PhysicalPlan] with JavaCodeGenerationSupport with Logging {
 
+  import JavaCodeGeneration._
+
   def generateJavaCode(codeGenerationContext : JavaCodeGenerationContext): JavaCode = {
     val generatedCode = child.asInstanceOf[JavaCodeGenerationSupport].produceJavaCode(codeGenerationContext, this)
     generatedCode
@@ -69,7 +71,7 @@ case class JavaCodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with
   def execute(): Iterator[p.InternalRow] = {
     println("execute")
     val codeGenerationContext = JavaCodeGenerationContext()
-    JavaCodeGeneration.cache.get(generateClassSource(codeGenerationContext)) { classSource =>
+    cache.get(generateClassSource(codeGenerationContext)) { classSource =>
       classSource.compile() match {
         case Success(generatedClass) => newInstanceOfGeneratedClass(generatedClass, child.asInstanceOf[JavaCodeGenerationSupport].inputRows, codeGenerationContext.getReferencesAsArray)
         case Failure(e) => throw e

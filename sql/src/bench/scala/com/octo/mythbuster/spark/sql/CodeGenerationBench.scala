@@ -10,8 +10,8 @@ import scala.collection.JavaConverters._
 object CodeGenerationBench extends QueryBench[(Int, Int)] with Logging {
 
   val TableRowCounts = for {
-    leftTableCount <- Gen.range("Left Table Row Count")(0, 6000, 500)
-    rightTableCount <- Gen.range("Right Table Row Count")(0, 200000, 50000)
+    leftTableCount <- Gen.range("Left Table Row Count")(0, 200, 10)
+    rightTableCount <- Gen.range("Right Table Row Count")(0, 300, 10)
   } yield (leftTableCount, rightTableCount)
 
   generateTables
@@ -31,17 +31,27 @@ object CodeGenerationBench extends QueryBench[(Int, Int)] with Logging {
         })
     }
 
+    /*measure method "With Code Generation (Including Compilation Time)" in {
+
+      var query: Query = null
+
+      using(TableRowCounts)
+          .in({ case (leftTableRowCount, rightTableRowCount) =>
+            Query(sql((leftTableRowCount, rightTableRowCount)), Query.ConfigWithCodeGeneration).get.fetch().foreach({ _ => })
+          })
+    }*/
+
     measure method "Without Code Generation" in {
       var query: Query = null
       using(TableRowCounts)
-        .setUp({ case (leftTableRowCount, rightTableRowCount) =>
-          val generatedSQL = sql((leftTableRowCount, rightTableRowCount))
-          println(generatedSQL)
-          query = Query(generatedSQL, Query.ConfigWithoutCodeGeneration).get
-        })
-        .in({ params =>
-          query.fetch().foreach({ _ => })
-        })
+          .setUp({ case (leftTableRowCount, rightTableRowCount) =>
+            val generatedSQL = sql((leftTableRowCount, rightTableRowCount))
+            println(generatedSQL)
+            query = Query(generatedSQL, Query.ConfigWithoutCodeGeneration).get
+          })
+          .in({ params =>
+            query.fetch().foreach({ _ => })
+          })
     }
   }
 
