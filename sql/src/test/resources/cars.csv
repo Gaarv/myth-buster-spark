@@ -1,5 +1,5 @@
-id,name,company_id
-1,Twingo,1
-2,Clio,1
-3,Prius,2
-4,Celica,2
+id;name;company_id
+1;Twingo;1
+2;Clio;1
+3;Prius;2
+4;Celica;2

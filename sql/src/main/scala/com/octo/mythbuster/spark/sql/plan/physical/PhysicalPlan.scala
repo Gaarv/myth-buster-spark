@@ -130,7 +130,11 @@ case class NestedLoopJoin(leftChild: PhysicalPlan, rightChild: PhysicalPlan, fil
     }
   }
 
-  override def explain(indent: Int): String = ???
+  def explain(indent: Int = 0): String = {
+    s"""${"  " * indent}NestedLoopJoin(${filter}) ${if (supportCodeGeneration()) "*" else ""}
+       |${leftChild.explain(indent + 1)}
+       |${rightChild.explain(indent + 1)}""".stripMargin
+  }
 
 }
 
@@ -160,9 +164,12 @@ case class HashJoin(leftChild: PhysicalPlan, rightChild: PhysicalPlan, filter: e
   }
 
   private def index[Type](physicalPlan: PhysicalPlan, expression: e.Expression): Index[Type] = {
+    println(physicalPlan)
     physicalPlan.execute()
         .toSeq
-        .groupBy(internalRow => expression.evaluate(internalRow))
+        .groupBy(internalRow => {
+          expression.evaluate(internalRow)
+        })
         .map({ case (k, v) => (k.asInstanceOf[Type], v) }) // Some checks need to be done, here!
   }
 
@@ -195,7 +202,11 @@ case class HashJoin(leftChild: PhysicalPlan, rightChild: PhysicalPlan, filter: e
 
   }
 
-  override def explain(indent: Int): String = ???
+  override def explain(indent: Int = 0): String = {
+    s"""${"  " * indent}HashJoin(${filter}) ${if (supportCodeGeneration()) "*" else ""}
+       |${leftChild.explain(indent + 1)}
+       |${rightChild.explain(indent + 1)}""".stripMargin
+  }
 
 }
 
@@ -203,7 +214,10 @@ case class AllProjections(child: PhysicalPlan) extends PhysicalPlan with t.Unary
 
   override def execute(): Iterator[InternalRow] = child.execute()
 
-  override def explain(indent: Int): String = ???
+  override def explain(indent: Int = 0): String = {
+    s"""${"  " * indent}AllProjections ${if (supportCodeGeneration()) "*" else ""}
+       |${child.explain(indent + 1)}""".stripMargin
+  }
 
 }
 

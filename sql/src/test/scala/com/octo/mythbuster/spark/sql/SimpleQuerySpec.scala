@@ -4,11 +4,12 @@ import scala.util.{Failure, Success}
 import com.octo.mythbuster.spark.UnitSpec
 import com.typesafe.config.{ConfigFactory, ConfigValue, ConfigValueFactory}
 
-class QuerySpec extends UnitSpec {
+class SimpleQuerySpec extends UnitSpec {
 
   def config(shouldGenerateCode: Boolean) = {
     ConfigFactory.empty()
       .withValue("shouldGenerateCode", ConfigValueFactory.fromAnyRef(shouldGenerateCode))
+      .withValue("shouldUseHashJoin", ConfigValueFactory.fromAnyRef(true))
   }
 
   val sql =
@@ -25,21 +26,26 @@ class QuerySpec extends UnitSpec {
       |  co.name = 'Toyota'
     """.stripMargin
 
+  var resultWithCodeGeneration: Seq[Row] = _
+  var resultWithoutCodeGeneration: Seq[Row] = _
+
   "The query" should "produce a valid explain plan" in {
     Query(sql, config(true)) match {
       case Success(query) => {
         println(query.explain())
       }
-      case Failure(e) => fail(e)
+      case Failure(e) =>
+        e.printStackTrace(Console.err)
+        fail(e)
     }
   }
 
   it should "return only 2 rows with code generation" in {
     Query(sql, config(true)) match {
       case Success(query) => {
-        val result = query.fetch().toSeq
-        result.foreach(println)
-        result.length should be(2)
+        resultWithCodeGeneration = query.fetch().toSeq
+        resultWithCodeGeneration.foreach(println)
+        resultWithCodeGeneration.length should be(2)
       }
       case Failure(e) => fail(e)
     }
@@ -55,12 +61,16 @@ class QuerySpec extends UnitSpec {
 
         val queryWithoutCodeGeneration = query
 
-        val result = queryWithoutCodeGeneration.fetch().toSeq
-        result.foreach(println)
-        result.length should be(2)
+        resultWithoutCodeGeneration = queryWithoutCodeGeneration.fetch().toSeq
+        resultWithoutCodeGeneration.foreach(println)
+        resultWithoutCodeGeneration.length should be(2)
       }
       case Failure(e) => fail(e)
     }
+  }
+
+  it should "return the same rows" in {
+    resultWithoutCodeGeneration.toSet should equal(resultWithCodeGeneration.toSet)
   }
 
 }
