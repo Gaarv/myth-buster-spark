@@ -1,13 +1,10 @@
-package com.octo.mythbuster.spark.sql
+package com.octo.mythbuster.spark.sql;
 
-import java.nio.file.{Files, Paths, StandardOpenOption}
-
+import org.scalameter.Gen
+import java.nio.file.{ Paths, Files, StandardOpenOption }
+import com.octo.mythbuster.spark.{ Logging, Resource }
+import com.google.common.io.Resources
 import com.google.common.base.Charsets
-import com.google.common.io.{CharSource, Resources}
-import com.octo.mythbuster.spark.{Logging, Resource}
-import com.typesafe.config.ConfigFactory
-import org.scalameter.api._
-
 import scala.collection.JavaConverters._
 
 object CodeGenerationBench extends QueryBench[(Int, Int)] with Logging {

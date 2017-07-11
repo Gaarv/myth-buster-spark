@@ -1,12 +1,11 @@
 package com.octo.mythbuster.spark.sql
 
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalameter.Reporter.Composite
-import org.scalameter.{Aggregator, Measurer}
+import org.scalameter.{ Aggregator, Measurer }
 import org.scalameter.api.Bench.Local
 import org.scalameter.api.Reporter
 import org.scalameter.picklers.Implicits.doublePickler
-import org.scalameter.reporting.DsvReporter
 
 import scala.util.{Failure, Success}
 

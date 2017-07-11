@@ -1,3 +1,5 @@
+lazy val Benchmark = config("bench") extend Test
+
 lazy val commonSettings = Seq(
   organization := "com.octo.mythbuster",
   version := "1.0",
@@ -5,7 +7,7 @@ lazy val commonSettings = Seq(
   testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework"),
   logBuffered := false,
   fork := true,
-  parallelExecution in Test := false,
+  parallelExecution in Benchmark := false,
   scalaVersion := "2.12.1",
   scalacOptions ++= Seq("-deprecation", "-feature")
 )
@@ -41,6 +43,7 @@ lazy val sql = (project in file("sql"))
       |
       |import com.octo.mythbuster.spark.example._
     """.stripMargin)
+  .configs(Benchmark).settings(inConfig(Benchmark)(Defaults.testSettings): _*)
   .dependsOn(common % "test->test;compile->compile", compiler)
 
 lazy val example = (project in file("example"))
