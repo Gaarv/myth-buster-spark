@@ -15,10 +15,17 @@ object PhysicalPlanOptimizer {
 class PhysicalPlanOptimizer(val config: Config) extends PlanOptimizer[PhysicalPlan] {
 
   // The rule to generate Java code is enabled only if shouldGenerateCode=true
-  private def generateJavaCodeRule = if (config.getBoolean("shouldGenerateCode")) Seq(GenerateJavaCode) else Nil
+  private def generateJavaCodeRule = if (config.getBoolean("shouldGenerateCode")) Some(GenerateJavaCode) else None
 
   private def useHashJoinRule = if (config.getBoolean("shouldUseHashJoin")) Seq(UseHashJoin) else Nil
 
-  override def rules: Seq[Rule[PhysicalPlan]] = useHashJoinRule ++ generateJavaCodeRule ++ Nil
+  override def rules: Seq[Rule[PhysicalPlan]] = useHashJoinRule
+
+  override def optimizePlan(plan: PhysicalPlan): PhysicalPlan = generateJavaCodeRule match {
+    case Some(generateJavaCodeRule) =>
+      generateJavaCodeRule(super.optimizePlan(plan))
+    case None =>
+      super.optimizePlan(plan)
+  }
 
 }

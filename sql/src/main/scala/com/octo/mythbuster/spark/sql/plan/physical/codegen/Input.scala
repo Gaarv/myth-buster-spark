@@ -1,7 +1,8 @@
 package com.octo.mythbuster.spark.sql.plan.physical.codegen
 
-import com.octo.mythbuster.spark.sql.plan.{ physical => p }
-import com.octo.mythbuster.spark.{ tree => t }
+import com.octo.mythbuster.spark.sql.expression.Expression
+import com.octo.mythbuster.spark.sql.plan.{physical => p}
+import com.octo.mythbuster.spark.{tree => t}
 
 case class Input(child: p.PhysicalPlan) extends p.PhysicalPlan with t.UnaryTreeNode[p.PhysicalPlan] with JavaCodeGenerationSupport {
 
@@ -19,10 +20,7 @@ case class Input(child: p.PhysicalPlan) extends p.PhysicalPlan with t.UnaryTreeN
      """.stripMargin
   }
 
-  override def explain(indent: Int = 0): String = {
-    child.explain(indent)
-  }
-
   override def inputRows = child.execute()
 
+  override def produce: Seq[Expression] = child.produce
 }

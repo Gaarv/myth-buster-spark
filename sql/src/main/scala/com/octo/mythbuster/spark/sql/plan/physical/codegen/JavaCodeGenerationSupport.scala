@@ -26,7 +26,7 @@ trait JavaCodeGenerationSupport {
     throw new UnsupportedOperationException("This method is not implemented! ")
   }
 
-  def inputRows: Iterator[p.InternalRow] = {
+  def inputRows: Iterator[p.Row] = {
     child.asInstanceOf[JavaCodeGenerationSupport].inputRows
   }
 

@@ -1,27 +1,51 @@
 package com.octo.mythbuster.spark.sql.plan.logical
 
-import com.octo.mythbuster.spark.sql.expression.{BinaryOperation, Expression}
+import com.octo.mythbuster.spark.sql.expression.{Expression, TableColumn}
 import com.octo.mythbuster.spark.sql.plan.Plan
 import com.octo.mythbuster.spark.{tree => t}
-import com.octo.mythbuster.spark.sql.{ RelationName, expression => e, parser => p }
+import com.octo.mythbuster.spark.sql.{RelationName, expression => e, parser => p}
 
 import scala.util.{Failure, Success, Try}
 
 sealed trait LogicalPlan extends Plan[LogicalPlan]
 
-case class CartesianProduct(leftChild: LogicalPlan, rightChild: LogicalPlan) extends LogicalPlan with t.BinaryTreeNode[LogicalPlan]
+case class CartesianProduct(leftChild: LogicalPlan, rightChild: LogicalPlan) extends LogicalPlan with t.BinaryTreeNode[LogicalPlan] {
 
-case class Join(leftChild: LogicalPlan, rightChild: LogicalPlan, expression: e.BinaryOperation) extends LogicalPlan with t.BinaryTreeNode[LogicalPlan]
+  override def produce: Seq[Expression] = leftChild.produce ++ rightChild.produce
 
-case class Filter(child: LogicalPlan, expression: e.Expression) extends LogicalPlan with t.UnaryTreeNode[LogicalPlan]
+}
 
-case class Projection(child: LogicalPlan, expression: Seq[e.Expression]) extends LogicalPlan with t.UnaryTreeNode[LogicalPlan]
+case class Join(leftChild: LogicalPlan, rightChild: LogicalPlan, expression: e.BinaryOperation) extends LogicalPlan with t.BinaryTreeNode[LogicalPlan] {
 
-case class AllProjections(child: LogicalPlan) extends LogicalPlan with t.UnaryTreeNode[LogicalPlan]
+  override def produce: Seq[Expression] = leftChild.produce ++ rightChild.produce
 
-case class TableScan(tableName: TableName, aliasName: Option[RelationName]) extends LogicalPlan with t.LeafTreeNode[LogicalPlan] {
+}
 
-  def relationName: String = aliasName.getOrElse(tableName)
+case class Filter(child: LogicalPlan, expression: e.Expression) extends LogicalPlan with t.UnaryTreeNode[LogicalPlan] {
+
+  override def produce: Seq[Expression] = child.produce
+
+}
+
+case class Projection(child: LogicalPlan, expression: Seq[e.Expression]) extends LogicalPlan with t.UnaryTreeNode[LogicalPlan] {
+
+  override def produce: Seq[Expression] = expression
+
+}
+
+case class TableScan(tableName: TableName) extends LogicalPlan with t.LeafTreeNode[LogicalPlan] {
+
+  def relationName: RelationName = tableName
+
+  override def produce: Seq[Expression] = {
+    (tableName match {
+      case "companies" =>
+        Seq("id", "name")
+
+      case "employees" =>
+        Seq("firstName", "lastName", "companyId", "isSpeaking")
+    }).map({ columnName => TableColumn(columnName) })
+  }
 
 }
 
@@ -36,9 +60,9 @@ object LogicalPlan {
   }
 
   def apply(ast: p.AST): Try[LogicalPlan] = ast match {
-    case p.Alias(p.Table(tableName), aliasName) => Success(TableScan(tableName, Some(aliasName)))
 
-    case p.Table(tableName) => Success(TableScan(tableName, None))
+    case p.Table(tableName) =>
+      Success(TableScan(tableName))
 
     case p.Join(filter, leftRelation, rightRelation) =>
       for {
@@ -55,16 +79,6 @@ object LogicalPlan {
       for {
         r <- apply(relations)
       } yield Projection(r, projections)
-
-    case p.SelectStar(Some(filter), relations) =>
-      for {
-        r <- apply(relations)
-      } yield AllProjections(Filter(r, filter))
-
-    case p.SelectStar(None, relations) =>
-      for {
-        r <- apply(relations)
-      } yield AllProjections(r)
   }
 
 }

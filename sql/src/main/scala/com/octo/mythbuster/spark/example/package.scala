@@ -9,11 +9,11 @@ import sql.lexer._
 
 package object example extends App {
 
-  lazy val sql: String = "SELECT a.name, o.name AS car_name FROM cars a JOIN companies o ON a.company_id = o.id WHERE o.name = 'Toyota'"
-  lazy val sql2: String = "SELECT t.station, t.trafic, t.reseau, p.coord FROM positions p JOIN trafic t ON p.stop_name = t.station  WHERE t.trafic > 10000000"
+  lazy val sql: String = "SELECT a.name, o.name AS car_name FROM companies oJOIN cars a ON a.company_id = o.id WHERE o.name = 'Toyota'"
+  //lazy val sql2: String = "SELECT t.station, t.trafic, t.reseau, p.coord FROM positions p JOIN trafic t ON p.stop_name = t.station  WHERE t.trafic > 10000000"
   //println("SQL : " + sql)
 
-  lazy val tokens: Seq[Token] = Lexer(sql2).get
+  lazy val tokens: Seq[Token] = Lexer(sql).get
   println("Tokens : " + tokens)
 
   lazy val ast: AST = Parser(tokens).get
@@ -26,7 +26,7 @@ package object example extends App {
   //println("Physical plan : " + physicalPlan.explain())
 
   val startTime = System.nanoTime()
-  val resultIterator = Query(sql2).get.fetch()
+  val resultIterator = Query(sql).get.fetch()
   val startExecutionTime = System.nanoTime()
   val result = resultIterator.toIndexedSeq
   val endTime = System.nanoTime()

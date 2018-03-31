@@ -40,6 +40,9 @@ lazy val sql = (project in file("sql"))
       |import com.octo.mythbuster.spark.Implicits._
       |import com.octo.mythbuster.spark.sql.lexer._
       |import com.octo.mythbuster.spark.sql.parser._
+      |import com.octo.mythbuster.spark.sql.plan._
+      |import com.octo.mythbuster.spark.sql.plan.physical._
+      |import com.octo.mythbuster.spark.sql.plan.logical._
       |
       |import com.octo.mythbuster.spark.example._
     """.stripMargin)
@@ -49,4 +52,14 @@ lazy val sql = (project in file("sql"))
 lazy val example = (project in file("example"))
   .settings(commonSettings)
   .settings(name := "example")
+    .settings(initialCommands in console :=
+      """
+        |import com.octo.mythbuster.spark.Implicits._
+        |import com.octo.mythbuster.spark.sql.lexer._
+        |import com.octo.mythbuster.spark.sql.parser._
+        |import com.octo.mythbuster.spark.sql.plan._
+        |import com.octo.mythbuster.spark.sql.plan.physical._
+        |import com.octo.mythbuster.spark.sql.plan.logical._
+        |import com.octo.mythbuster.spark.sql.Query._
+      """.stripMargin)
   .dependsOn(sql)

@@ -48,8 +48,14 @@ object Dependencies {
     "org.scalatest" %% "scalatest" % "3.0.1"
   )
 
+  val Fansi = Seq (
+
+  )
+
+  val Scripting = Fansi
+
   val Testing = ScalaTest ++ ScalaMeter ++ ScalaPlot
 
-  val Common = Tooling ++ Logging ++ Configuring ++ (Testing )
+  val Common = Tooling ++ Logging ++ Configuring ++ Scripting ++ (Testing ) ++ Seq("com.github.nikita-volkov" % "sext" % "0.2.4")
 
 }

@@ -1,0 +1,43 @@
+WAIT(1000)
+sbt "example/console"
+WAIT(10000)
+
+// Commençons par importer le package d'exemple
+import com.octo.mythbuster.spark.{ example => e }
+WAIT(1500)
+// Augmentons la taille du buffer de String du REPL
+:power
+WAIT(6500)
+vals.isettings.maxPrintString = Int.MaxValue
+WAIT(1500)
+// Nous allons travailler sur la requête suivante
+println(e.SQL)
+WAIT(5000)
+// On peut alors calculer le plan logique d'exécution
+val lp = e.logicalPlanOf(e.SQL)
+WAIT(2500)
+// Idem, mais avec le plan physique d'exécution
+// Commençons par le faire sans optimisation
+val pp = e.physicalPlanOf(e.SQL)
+WAIT(1500)
+println(pp.explain(highlight = "NestedLoopJoin"))
+WAIT(5000)
+// On l'optimise une première fois sans la génération de code
+var opp = e.optimize(pp, config = ConfigWithoutCodeGeneration)
+println(opp.explain(highlight = "HashJoin"))
+WAIT(2500)
+// On voit que le Nested Loop Join est devenu un Hash Join : l'optimiseur a fait le remplacement car la clause ON de la jointure s'y prétait
+WAIT(2500)
+// Optimisons une seconde fois, avec la génération de code
+opp = e.optimize(opp, config = ConfigWithCodeGeneration)
+println(opp.explain(highlight = "JavaCodeGeneration"))
+WAIT(5000)
+// Il est alors possible de récupérer le code généré
+println(e.generateJavaCode(opp))
+WAIT(2500)
+// On remarque que c'est bien du code Java qui est généré
+WAIT(1500)
+// C'est ce code Java qui va être compilé et utilisé au sein de JavaCodeGenration lors de l'exécution effective de la requête
+:quit
+WAIT(1500)
+exit

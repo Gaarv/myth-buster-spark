@@ -28,7 +28,7 @@ object Query extends Logging {
     logicalPlan <- LogicalPlan(ast)
     _ = logger.info("Computed logical plan is {}", logicalPlan)
     // ...Which can be optimized
-    optimizedLogicalPlan = LogicalPlanOptimizer.optimizePlan(logicalPlan)
+    optimizedLogicalPlan = LogicalPlanOptimizer(config).optimizePlan(logicalPlan)
     // With the logical plan, we're now able to plan the physical plan...
     physicalPlan <- QueryPlanner.planQuery(optimizedLogicalPlan)
     _ = logger.info("Planned physical plan is {}", physicalPlan)
@@ -45,7 +45,7 @@ class Query(val physicalPlan: PhysicalPlan) {
   val CSVSeparator = ";"
 
   // It's just a nice API to execute the physical plan we infered above and map the InteralRows to Rows
-  def fetch(): Iterator[Row] = physicalPlan.execute().map(_.toRow)
+  def fetch(): Iterator[Row] = physicalPlan.execute()
 
   def fetchAsCSV(): Iterator[String] = fetch().zipWithIndex.flatMap({
     case (row, index) if index == 0 =>

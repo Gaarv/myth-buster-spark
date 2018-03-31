@@ -30,7 +30,11 @@ trait BinaryArityOperation extends BinaryAST {
 
   val operator: Operator
 
+  val operatorSymbol: String
+
   override def evaluate() = operator(leftChild.evaluate(), rightChild.evaluate())
+
+  override def toString: String = s"(${leftChild.toString} ${operatorSymbol} ${rightChild.toString})"
 
 }
 
@@ -38,11 +42,15 @@ case class Add(leftChild: AST, rightChild: AST) extends BinaryArityOperation {
 
   val operator: Operator = { _ + _ }
 
+  override val operatorSymbol = "+"
+
 }
 
 case class Opposite(child: AST) extends UnaryArityOperation {
 
   val operator = { -1 * _ }
+
+  override def toString: String = s"(- ${child})"
 
 }
 
@@ -50,11 +58,15 @@ case class Multiply(leftChild: AST, rightChild: AST) extends BinaryArityOperatio
 
   val operator: Operator = { _ * _ }
 
+  override val operatorSymbol = "×"
+
 }
 
 case class Number(val value: Float) extends LeafAST {
 
   override def evaluate() = value
+
+  override def toString: String = value.toString
 
 }
 

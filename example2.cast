@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "width": 94,
+  "height": 25,
+  "duration": 3.73088,
+  "command": null,
+  "title": null,
+  "env": {
+    "TERM": "xterm-256color",
+    "SHELL": "/bin/bash"
+  },
+  "stdout": [
+    [
+      0.0968,
+      "\u001b]0;adrien@adrien-macbook-pro:~/Professional/Projects/Research/myth-buster-spark\u0007"
+    ],
+    [
+      0.108343,
+      "\u001b[0;32m✔\u001b[0;0m \u001b[0;33m~/Professional/Projects/Research/myth-buster-spark\u001b[0;0m [\u001b[0;35mmaster\u001b[0;0m|\u001b[0;31m●1\u001b[0;0m\u001b[0;34m✚ 12\u001b[0;0m\u001b[0;36m…9\u001b[0;0m\u001b[1;34m⚑ 1\u001b[0;0m\u001b[0;0m] \r\r\n\u001b[0;37m20:53\u001b[0;0m $ "
+    ],
+    [
+      0.975294,
+      "e"
+    ],
+    [
+      0.113485,
+      "c"
+    ],
+    [
+      0.087793,
+      "h"
+    ],
+    [
+      0.072148,
+      "o"
+    ],
+    [
+      0.120189,
+      " "
+    ],
+    [
+      0.127723,
+      "\""
+    ],
+    [
+      0.368179,
+      "S"
+    ],
+    [
+      0.11887,
+      "a"
+    ],
+    [
+      0.176957,
+      "l"
+    ],
+    [
+      0.088176,
+      "u"
+    ],
+    [
+      0.079797,
+      "t"
+    ],
+    [
+      0.488256,
+      " "
+    ],
+    [
+      0.199165,
+      "!"
+    ],
+    [
+      0.184729,
+      "\""
+    ],
+    [
+      0.272157,
+      "\r\n"
+    ],
+    [
+      0.000227,
+      "Salut !\r\n"
+    ],
+    [
+      0.000336,
+      "\u001b]0;adrien@adrien-macbook-pro:~/Professional/Projects/Research/myth-buster-spark\u0007"
+    ],
+    [
+      0.05022,
+      "\u001b[0;32m✔\u001b[0;0m \u001b[0;33m~/Professional/Projects/Research/myth-buster-spark\u001b[0;0m [\u001b[0;35mmaster\u001b[0;0m|\u001b[0;31m●1\u001b[0;0m\u001b[0;34m✚ 12\u001b[0;0m\u001b[0;36m…9\u001b[0;0m\u001b[1;34m⚑ 1\u001b[0;0m\u001b[0;0m] \r\r\n\u001b[0;37m20:53\u001b[0;0m $ "
+    ]
+  ]
+}

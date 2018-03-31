@@ -2,14 +2,12 @@ package com.octo.mythbuster.spark.sql.parser
 
 import com.octo.mythbuster.spark.sql.expression.BinaryOperation
 
-import scala.{ util => u }
-
+import scala.{util => u}
 import scala.util.parsing.combinator.Parsers
 import scala.util.parsing.input.{NoPosition, Position, Reader}
 import scala.language.postfixOps
-
-import com.octo.mythbuster.spark.sql.{ expression => e }
-import com.octo.mythbuster.spark.sql.{ lexer => l }
+import com.octo.mythbuster.spark.sql.{expression => e}
+import com.octo.mythbuster.spark.sql.{lexer => l}
 
 // https://en.wikipedia.org/wiki/LR_parser
 // https://gist.github.com/kishida/1345875
@@ -46,21 +44,21 @@ object Parser extends Parsers {
 
   }
 
-  def primaryExpression: Parser[e.Expression] = { tableColumn | literal | ( l.LeftParenthesis() ~> expression <~ l.RightParenthesis() ) }
+  def primaryExpression: Parser[e.Expression] = { column | literal | ( l.LeftParenthesis() ~> expression <~ l.RightParenthesis() ) }
 
   def expression = or
 
-  def tableColumn = { identifier ~ l.Dot() ~ identifier } ^^ { case l.Identifier(tableName) ~ _ ~ l.Identifier(columnName) => e.TableColumn(tableName, columnName) }
+  def column = { identifier } ^^ { case l.Identifier(columnName) => e.TableColumn(columnName) }
 
   def identifier = { accept("identifier", { case identifier @ l.Identifier(_) => identifier }) }
 
-  def literal: Parser[e.Literal] = { number | text }
+  def literal: Parser[e.Literal] = { number | text | bool }
 
   def text = { accept("text", { case text @ l.Text(value) => value }) } ^^ { value => e.Text(value) }
 
   def number = { accept("number", { case number @ l.Number(value) => value }) } ^^ { value => e.Number(value) }
 
-  def selectStar = { l.Select() ~> l.Star() ~ relations ~ ( where ? ) } ^^ { case _ ~ relations ~ filter => SelectStar(filter, relations) }
+  def bool = { ( l.True() ^^ { _ => e.Bool(true) } ) | ( l.False() ^^ { _ => e.Bool(false) } ) }
 
   def select = { l.Select() ~> projections ~ relations ~ ( where ? ) } ^^ { case projections ~ relations ~ filter => Select(projections, filter, relations) }
 
@@ -75,25 +73,21 @@ object Parser extends Parsers {
 
   def projections = repsep(projection, l.Comma())
 
-  def relations = l.From() ~> rep1sep(relation, l.Comma())
+  def relations: Parser[Seq[Relation]] = l.From() ~> rep1sep(relation, l.Comma())
 
-  def relation: Parser[Relation] = simpleRelation ~ rep(l.Join() ~ simpleRelation ~ l.On() ~ equal ^^ { case _ ~ relation ~ _ ~ filter => (relation, filter) } ) ^^ {
+  def subSelect: Parser[Relation] = { l.LeftParenthesis() ~ select ~ l.RightParenthesis() } ^^ { case _ ~ select ~ _ => select }
+
+  def relation: Parser[Relation] = ( table | subSelect ) ~ rep(l.Join() ~ table ~ l.On() ~ equal ^^ { case _ ~ relation ~ _ ~ filter => (relation, filter) } ) ^^ {
     case lhs ~ elements => elements.foldLeft(lhs) { case (leftRelation, (rightRelation, filter)) => Join(filter, leftRelation, rightRelation) }
   }
 
-  def simpleRelation: Parser[Relation] = table ~ opt(opt(l.As()) ~ identifier) ^^ {
-    case table ~ None => table
-    case table ~ Some(_ ~ l.Identifier(value)) => Alias(table, value)
-
-  }
-
-  def table : Parser[Table] = { identifier } ^^ { case l.Identifier(tableName) => Table(tableName) }
+  def table: Parser[Relation] = { identifier } ^^ { case l.Identifier(tableName) => Table(tableName) }
 
   def equal : Parser[BinaryOperation] = primaryExpression ~ l.Equal() ~ primaryExpression ^^ { case leftColumn ~ _ ~ rightColumn => e.Equal(leftColumn, rightColumn) }
 
   def join = { relation ~ l.Join() ~ table ~ l.On() ~ equal } ^^ { case leftRelation ~ _ ~ rightRelation ~ _ ~ filter => Join(filter, leftRelation, rightRelation) }
 
-  def ast: Parser[AST] = selectStar | select
+  def ast: Parser[AST] = select
 
   def apply(tokens: Seq[l.Token]): u.Try[AST] = {
     val reader = new TokenReader(tokens)

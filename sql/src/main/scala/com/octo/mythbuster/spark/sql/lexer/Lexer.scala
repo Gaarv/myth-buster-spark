@@ -17,7 +17,7 @@ object Lexer extends RegexParsers {
 
   def equal: Parser[Equal] = positioned { "=" ^^ { _ => Equal() } }
 
-  def identifier: Parser[Identifier] = positioned { "[a-z_][a-z0-9_]*".r ^^  { value => Identifier(value) } }
+  def identifier: Parser[Identifier] = positioned { "[a-z_][a-zA-Z0-9_]*".r ^^  { value => Identifier(value) } }
 
   def number: Parser[Number] = positioned { "[-]?[0-9]+(\\.[0-9]+)?".r ^^ { value => Number(value.toFloat) } }
 
@@ -53,8 +53,10 @@ object Lexer extends RegexParsers {
 
   def apply(query: String): util.Try[Seq[Token]] = {
     parse(tokens, query) match {
-      case NoSuccess(message, _) => util.Failure(new LexerException(message))
-      case Success(tokens, _) => util.Success(tokens)
+      case NoSuccess(message, _) =>
+        util.Failure(new LexerException(message))
+      case Success(tokens, _) =>
+        util.Success(tokens)
     }
   }
 

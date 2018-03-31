@@ -6,16 +6,6 @@ package object physical {
 
   type RelationName = Name
 
-  type InternalColumn = (Option[RelationName], ColumnName)
-
-  type InternalRow = Map[InternalColumn, Any]
-
-  implicit class InternalRowImplicits(internalRow: InternalRow) {
-
-    def toRow: Row = internalRow.map({ case ((tableName, columnName), value) => (tableName.map(n => s"${n}.").getOrElse("") + columnName, value)})
-
-  }
-
-  //val t: Iterator
+  type Row = Map[ColumnName, Any]
 
 }

@@ -8,10 +8,11 @@ import com.octo.mythbuster.spark.{Caching, Logging, tree => t}
 import com.octo.mythbuster.spark.compiler._
 import com.octo.mythbuster.spark.sql.plan.{physical => p}
 import com.octo.mythbuster.spark.sql.plan.physical.codegen.wrapper.{CodeGeneratedInternalRowIterator, InternalRow => JavaInternalRow}
-import com.octo.mythbuster.spark.sql.plan.physical.{InternalRow => ScalaInternalRow}
+import p.{Row => ScalaRow}
 import Implicits._
+import com.octo.mythbuster.spark.sql.expression.Expression
 
-object JavaCodeGeneration extends Caching[JavaClassSource, Iterator[p.InternalRow]]
+object JavaCodeGeneration extends Caching[JavaClassSource, ScalaIterator[ScalaRow]]
 
 case class JavaCodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with t.UnaryTreeNode[p.PhysicalPlan] with JavaCodeGenerationSupport with Logging {
 
@@ -68,7 +69,7 @@ case class JavaCodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with
     JavaClassSource(className, classCode)
   }
 
-  def execute(): Iterator[p.InternalRow] = {
+  def execute(): ScalaIterator[ScalaRow] = {
     println("execute")
     val codeGenerationContext = JavaCodeGenerationContext()
     cache.get(generateClassSource(codeGenerationContext)) { classSource =>
@@ -93,15 +94,12 @@ case class JavaCodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with
      """.stripMargin.trim
   }
 
-  protected def newInstanceOfGeneratedClass(generatedClass: Class[_], childRows: ScalaIterator[ScalaInternalRow], references : Array[Object]): ScalaIterator[ScalaInternalRow] = {
+  protected def newInstanceOfGeneratedClass(generatedClass: Class[_], childRows: ScalaIterator[ScalaRow], references : Array[Object]): ScalaIterator[ScalaRow] = {
     val constructor = generatedClass.getConstructor(classOf[JavaIterator[JavaInternalRow]])
     val newInstance = constructor.newInstance(childRows.wrapForJava).asInstanceOf[CodeGeneratedInternalRowIterator]
     newInstance.init(references)
     newInstance.unwrapForScala()
   }
 
-  def explain(indent: Int = 0): String = {
-    child.explain(indent)
-  }
-
+  override def produce: Seq[Expression] = child.produce
 }

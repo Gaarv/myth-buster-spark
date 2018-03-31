@@ -1,9 +1,10 @@
-package com.octo.mythbuster.spark.example
+/*package com.octo.mythbuster.spark.example
 
 import com.octo.mythbuster.spark.sql.Query
 import com.octo.mythbuster.spark.sql.Query._
+import com.octo.mythbuster.spark.sql.plan.physical.InternalRow
 
-import scala.util.{ Success, Failure }
+import scala.util.{Failure, Success}
 
 object SQL extends App {
 
@@ -24,13 +25,14 @@ object SQL extends App {
       |  AND v.validation_type = 'NAVIGO'
     """.stripMargin
 
-  val config = ConfigWithCodeGeneration
-  Query(sql, config) match {
-    case Success(query) =>
-      query.fetchAsCSV().foreach(println)
+  for (config <- Seq(ConfigWithCodeGeneration)) {
+    Query(sql, config) match {
+      case Success(query) =>
+        query.fetchAsCSV().foreach(println)
 
-    case Failure(e) =>
-      e.printStackTrace(Console.out)
+      case Failure(e) =>
+        e.printStackTrace(Console.out)
+    }
   }
 
-}
+}*/

@@ -19,6 +19,8 @@ class TreeSpec extends UnitSpec {
     )
   )
 
+  println(s"${originalAST} = ${originalAST.evaluate()}")
+
   val factorizedAST = Multiply(
     Number(4),
     Add(
@@ -50,6 +52,8 @@ class TreeSpec extends UnitSpec {
     val transformedAST = originalAST.transformDown({
       case Factorize(factorizedAST) => factorizedAST
     })
+
+    println(s"${transformedAST} = ${transformedAST.evaluate()}")
 
     transformedAST should be(factorizedAST)
   }

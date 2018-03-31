@@ -1,12 +1,12 @@
 package com.octo.mythbuster.spark.sql.plan.physical
 
 import java.net.URL
-import java.nio.file.Path
+import java.nio.file.{Path, Paths}
 import java.util
 
 import com.google.common.base.Charsets
 import com.google.common.io.Resources
-import com.octo.mythbuster.spark.sql.expression.{BinaryOperation, TableColumn}
+import com.octo.mythbuster.spark.sql.expression.{BinaryOperation, Expression, TableColumn}
 import com.octo.mythbuster.spark.sql.plan.physical.codegen.wrapper.{InternalRow => JavaInternalRow}
 import com.octo.mythbuster.spark.Implicits._
 
@@ -23,13 +23,14 @@ import com.octo.mythbuster.spark.sql.plan.physical.codegen.Implicits._
 
 import scala.collection.JavaConverters._
 
-
 // A PhysicalPlan modelize each stage which will be executed during the execution of the query
 trait PhysicalPlan extends Plan[PhysicalPlan] with t.TreeNode[PhysicalPlan] {
 
-  def execute(): Iterator[InternalRow]
+  def execute(): Iterator[Row]
 
-  def explain(indent: Int = 0): String
+  override def titleForExplain: String = {
+    s"${super.titleForExplain}${if (supportCodeGeneration()) " *" else ""}"
+  }
 
   def supportCodeGeneration(): Boolean = {
     this.isInstanceOf[JavaCodeGenerationSupport]
@@ -37,36 +38,43 @@ trait PhysicalPlan extends Plan[PhysicalPlan] with t.TreeNode[PhysicalPlan] {
 
 }
 
-trait Scan extends PhysicalPlan with t.LeafTreeNode[PhysicalPlan] {
-
-  def qualifierName: QualifierName
-
-}
-
 // This physical plan parse a CSV in order to produce internal rows
-case class CSVFileFullScan(qualifierName: QualifierName, csvFileURL: URL) extends Scan {
+case class CSVFileFullScan(csvFileURL: URL) extends PhysicalPlan with t.LeafTreeNode[PhysicalPlan] {
 
   import scala.collection.JavaConverters._
 
   val Separator = ";"
 
-  override def execute(): Iterator[InternalRow] = {
+  override def execute(): Iterator[Row] = {
     val charSource = scala.io.Source.fromURL(csvFileURL)
     val charSourceSeq = charSource.getLines()//.toSeq // FIXME: Close InputStream on last item
     //inputStream.close()
 
     var charSourceIterator = charSourceSeq//.iterator
     //val charSource = Resources.asCharSource(csvFileURL, Charsets.UTF_8)
-    val columnNames = charSourceIterator.next().split(Separator).map(_.toLowerCase)
+    val columnNames = charSourceIterator.next().split(Separator)//.map(_.toLowerCase)
     charSourceIterator
       .map({ line =>
         columnNames.zip(line.split(Separator)).toMap[String, Any]
       })
-      .map(_.toInternalRow(qualifierName))
   }
 
-  override def explain(indent: Int = 0): String = {
-    s"${"  " * indent}CSVFileFullScan(${csvFileURL}) ${if (supportCodeGeneration()) "*" else ""}"
+  override def titleForExplain: String = {
+    s"CSVFileFullScan(${Paths.get(csvFileURL.getFile).getFileName})"
+  }
+
+  override def produce: Seq[Expression] = {
+    val charSource = scala.io.Source.fromURL(csvFileURL)
+    val charSourceSeq = charSource.getLines()//.toSeq // FIXME: Close InputStream on last item
+    //inputStream.close()
+
+    var charSourceIterator = charSourceSeq//.iterator
+    //val charSource = Resources.asCharSource(csvFileURL, Charsets.UTF_8)
+    val columnNames = charSourceIterator.next().split(Separator)//.map(_.toLowerCase)
+
+    columnNames.map({ columnName =>
+      TableColumn(columnName)
+    })
   }
 
 }
@@ -74,50 +82,31 @@ case class CSVFileFullScan(qualifierName: QualifierName, csvFileURL: URL) extend
 // This will filter internal rows which does not fulfill the expression (which should be a predicate)
 case class Filter(child: PhysicalPlan, expression: e.Expression) extends PhysicalPlan with JavaCodeGenerationSupport with t.UnaryTreeNode[PhysicalPlan] {
 
-  override def execute() : Iterator[InternalRow] = {
+  override def execute() : Iterator[Row] = {
     expression.toPredicate match {
       case Success(predicate) => child.execute().filter(predicate.evaluate)
       case Failure(e) => throw e
     }
   }
 
-  override def explain(indent: Int = 0): String = {
-    s"""${"  " * indent}Filter(${expression}) ${if (supportCodeGeneration()) "*" else ""}
-       |${child.explain(indent + 1)}""".stripMargin
+  override def titleForExplain: String = {
+    s"Filter(${expression})"
   }
 
   override def doConsumeJavaCode(codeGenerationContext: c.JavaCodeGenerationContext, rowVariableName: JavaCode): JavaCode = {
     s"""
-       |/* Filter ${child} using ${expression} */
        |if(!(${expression.generateJavaCode(rowVariableName)})) continue;
        |${consumeJavaCode(codeGenerationContext, rowVariableName)}
       """.stripMargin
   }
 
-}
-
-// The CartesianProduct will do a cartesian product of the two child (by keeping in memory the right one)
-case class CartesianProduct(leftChild: PhysicalPlan, rightChild: PhysicalPlan) extends PhysicalPlan with t.BinaryTreeNode[PhysicalPlan] {
-
-  override def execute(): Iterator[InternalRow] = {
-    val rightRows = rightChild.execute().toSeq
-    for {
-      leftRow <- leftChild.execute()
-      rightRow <- rightRows
-    } yield leftRow ++ rightRow
-  }
-
-  override def explain(indent: Int = 0): String = {
-    s"""${"  " * indent}CartesianProduct ${if (supportCodeGeneration()) "*" else ""}
-       |${leftChild.explain(indent + 1)}
-       |${rightChild.explain(indent + 1)}""".stripMargin
-  }
+  override def produce: Seq[Expression] = child.produce
 
 }
 
 case class NestedLoopJoin(leftChild: PhysicalPlan, rightChild: PhysicalPlan, filter: e.BinaryOperation) extends PhysicalPlan with t.BinaryTreeNode[PhysicalPlan] {
 
-  override def execute(): Iterator[InternalRow] = {
+  override def execute(): Iterator[Row] = {
     // We do some kind of lazy cartesian product
     val cartesianProduct = for {
       leftRow <- leftChild.execute()
@@ -126,26 +115,26 @@ case class NestedLoopJoin(leftChild: PhysicalPlan, rightChild: PhysicalPlan, fil
 
     // And we filter the row fitting the filter
     cartesianProduct collect {
-      case row: InternalRow if filter.evaluate(row).asInstanceOf[Boolean] => row
+      case row: Row if filter.evaluate(row).asInstanceOf[Boolean] => row
     }
   }
 
-  def explain(indent: Int = 0): String = {
-    s"""${"  " * indent}NestedLoopJoin(${filter}) ${if (supportCodeGeneration()) "*" else ""}
-       |${leftChild.explain(indent + 1)}
-       |${rightChild.explain(indent + 1)}""".stripMargin
+  override def titleForExplain: String = {
+    s"NestedLoopJoin(${filter})"
   }
+
+  override def produce: Seq[Expression] = leftChild.produce ++ rightChild.produce
 
 }
 
 // This HashJoin will only works if the need column by the leftExpression are provided by the leftChild
 case class HashJoin(leftChild: PhysicalPlan, rightChild: PhysicalPlan, filter: e.BinaryOperation) extends PhysicalPlan with t.BinaryTreeNode[PhysicalPlan] with JavaCodeGenerationSupport {
 
-  type Index[Type] = Map[Type, Seq[InternalRow]]
+  type Index[Type] = Map[Type, Seq[Row]]
 
   val child = rightChild
 
-  override def execute(): Iterator[InternalRow] = {
+  override def execute(): Iterator[Row] = {
     filter match {
       case e.Equal(leftExpression: e.Expression, rightExpression: e.Expression) =>
         // We index the left part of the physical plan by the filter
@@ -164,7 +153,6 @@ case class HashJoin(leftChild: PhysicalPlan, rightChild: PhysicalPlan, filter: e
   }
 
   private def index[Type](physicalPlan: PhysicalPlan, expression: e.Expression): Index[Type] = {
-    println(physicalPlan)
     physicalPlan.execute()
         .toSeq
         .groupBy(internalRow => {
@@ -187,7 +175,6 @@ case class HashJoin(leftChild: PhysicalPlan, rightChild: PhysicalPlan, filter: e
         val rowVariableName = codeGenerationContext.freshVariableName()
 
         s"""
-           |/* HashJoin between ${leftChild} and ${rightChild} on ${filter} */
            |List<InternalRow> ${leftRowsVariableName} = ${leftIndexAsJavaVariableName}.get(${rightExpression.generateJavaCode(rightRowVariableName)});
            |if(${leftRowsVariableName} == null) continue;
            |for (InternalRow ${leftRowVariableName} : ${leftRowsVariableName}) {
@@ -202,41 +189,29 @@ case class HashJoin(leftChild: PhysicalPlan, rightChild: PhysicalPlan, filter: e
 
   }
 
-  override def explain(indent: Int = 0): String = {
-    s"""${"  " * indent}HashJoin(${filter}) ${if (supportCodeGeneration()) "*" else ""}
-       |${leftChild.explain(indent + 1)}
-       |${rightChild.explain(indent + 1)}""".stripMargin
+  override def titleForExplain: String = {
+    s"HashJoin(${filter})"
   }
 
-}
-
-case class AllProjections(child: PhysicalPlan) extends PhysicalPlan with t.UnaryTreeNode[PhysicalPlan] with JavaCodeGenerationSupport {
-
-  override def execute(): Iterator[InternalRow] = child.execute()
-
-  override def explain(indent: Int = 0): String = {
-    s"""${"  " * indent}AllProjections ${if (supportCodeGeneration()) "*" else ""}
-       |${child.explain(indent + 1)}""".stripMargin
-  }
+  override def produce: Seq[Expression] = leftChild.produce ++ rightChild.produce
 
 }
 
 // The projection will map the InternalRows by applying the expressions
 case class Projection(child: PhysicalPlan, expressions : Seq[e.Expression]) extends PhysicalPlan with t.UnaryTreeNode[PhysicalPlan] with JavaCodeGenerationSupport {
 
-  def execute(): Iterator[InternalRow] = child.execute().map({ internalRow =>
+  def execute(): Iterator[Row] = child.execute().map({ internalRow =>
     Map(expressions.zipWithIndex.map({ case (expression: e.Expression, index: Int) =>
       val value: Any = expression.evaluate(internalRow)
       (expression match {
-        case e.NamedExpression(name) => (None, name)
-        case _ => (None, s"column_${index}")
+        case e.NamedExpression(name) => name
+        case _ => s"column_${index}"
       }) -> value
     }): _*)
   })
 
-  def explain(indent: Int = 0): String = {
-    s"""${"  " * indent}Projection(${expressions.mkString(", ")}) ${if (supportCodeGeneration()) "*" else ""}
-       |${child.explain(indent + 1)}""".stripMargin
+  override def titleForExplain: String = {
+    s"Projection(${expressions.mkString(", ")})"
   }
 
   override def doConsumeJavaCode(codeGenerationContext: c.JavaCodeGenerationContext, rowVariableName: JavaCode): JavaCode = {
@@ -255,12 +230,13 @@ case class Projection(child: PhysicalPlan, expressions : Seq[e.Expression]) exte
       .mkString("\n")
 
     s"""
-      |/* Projection over ${expressions.mkString(",")} */
       |InternalRow ${newRowVariableName} = InternalRow.create();
       |${projectionCode}
       |
       |${consumeJavaCode(codeGenerationContext, newRowVariableName)}
     """.stripMargin
   }
+
+  override def produce: Seq[Expression] = expressions
 
 }
