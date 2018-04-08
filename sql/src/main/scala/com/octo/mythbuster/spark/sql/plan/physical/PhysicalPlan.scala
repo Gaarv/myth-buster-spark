@@ -63,7 +63,7 @@ case class CSVFileFullScan(csvFileURL: URL) extends PhysicalPlan with t.LeafTree
     s"CSVFileFullScan(${Paths.get(csvFileURL.getFile).getFileName})"
   }
 
-  override def produce: Seq[Expression] = {
+  /*override def produce: Seq[Expression] = {
     val charSource = scala.io.Source.fromURL(csvFileURL)
     val charSourceSeq = charSource.getLines()//.toSeq // FIXME: Close InputStream on last item
     //inputStream.close()
@@ -75,7 +75,7 @@ case class CSVFileFullScan(csvFileURL: URL) extends PhysicalPlan with t.LeafTree
     columnNames.map({ columnName =>
       TableColumn(columnName)
     })
-  }
+  }*/
 
 }
 
@@ -100,7 +100,7 @@ case class Filter(child: PhysicalPlan, expression: e.Expression) extends Physica
       """.stripMargin
   }
 
-  override def produce: Seq[Expression] = child.produce
+  //override def produce: Seq[Expression] = child.produce
 
 }
 
@@ -123,7 +123,7 @@ case class NestedLoopJoin(leftChild: PhysicalPlan, rightChild: PhysicalPlan, fil
     s"NestedLoopJoin(${filter})"
   }
 
-  override def produce: Seq[Expression] = leftChild.produce ++ rightChild.produce
+  //override def produce: Seq[Expression] = leftChild.produce ++ rightChild.produce
 
 }
 
@@ -193,7 +193,7 @@ case class HashJoin(leftChild: PhysicalPlan, rightChild: PhysicalPlan, filter: e
     s"HashJoin(${filter})"
   }
 
-  override def produce: Seq[Expression] = leftChild.produce ++ rightChild.produce
+  //override def produce: Seq[Expression] = leftChild.produce ++ rightChild.produce
 
 }
 
@@ -237,6 +237,6 @@ case class Projection(child: PhysicalPlan, expressions : Seq[e.Expression]) exte
     """.stripMargin
   }
 
-  override def produce: Seq[Expression] = expressions
+  //override def produce: Seq[Expression] = expressions
 
 }

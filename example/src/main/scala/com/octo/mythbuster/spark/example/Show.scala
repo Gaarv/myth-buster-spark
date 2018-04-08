@@ -19,44 +19,33 @@ object Show extends App {
     """
       |SELECT
       |  firstName,
-      |  lastName,
-      |  name
+      |  lastName
       |FROM
-      |  (
-      |    SELECT
-      |      companyId,
-      |      firstName,
-      |      lastName
-      |    FROM
-      |      employees
-      |    WHERE
-      |      isSpeaking = TRUE
-      |  )
+      |  employees
       |JOIN
       |  companies
       |ON
       |  companyId = id
       |WHERE
-      |  firstName = 'Adrien'
+      |  name = 'OCTO'
     """.stripMargin
   }
 
-  println(" COUCOU ")
   (for {
     tokens <- Lexer(sql)
     _ = println(tokens)
 
     ast <- Parser(tokens)
-    _ = println(ast.treeString)
+    _ = println(ast)
 
     logicalPlan <- LogicalPlan(ast)
-    _ = println(s"Logical Plan: ${logicalPlan.treeString}")
+    _ = println(s"Logical Plan: ${logicalPlan}")
 
     optimizedLogicalPlan = LogicalPlanOptimizer(config).optimizePlan(logicalPlan)
-    _ = println(s"Optimized Logical Plan: ${optimizedLogicalPlan.treeString}")
+    _ = println(s"Optimized Logical Plan: ${optimizedLogicalPlan}")
 
     physicalPlan <- QueryPlanner.planQuery(optimizedLogicalPlan)
-    _ = println(s"Physical Plan: ${physicalPlan.treeString}")
+    _ = println(s"Physical Plan: ${physicalPlan}")
 
     optimizedPhysicalPlan = PhysicalPlanOptimizer(config).optimizePlan(physicalPlan)
     _ = println(s"Optimized Physical Plan: ${optimizedPhysicalPlan}")

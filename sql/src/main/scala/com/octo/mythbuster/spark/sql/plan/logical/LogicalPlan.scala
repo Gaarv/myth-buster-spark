@@ -7,7 +7,11 @@ import com.octo.mythbuster.spark.sql.{RelationName, expression => e, parser => p
 
 import scala.util.{Failure, Success, Try}
 
-sealed trait LogicalPlan extends Plan[LogicalPlan]
+sealed trait LogicalPlan extends Plan[LogicalPlan] {
+
+  def produce: Seq[Expression]
+
+}
 
 case class CartesianProduct(leftChild: LogicalPlan, rightChild: LogicalPlan) extends LogicalPlan with t.BinaryTreeNode[LogicalPlan] {
 

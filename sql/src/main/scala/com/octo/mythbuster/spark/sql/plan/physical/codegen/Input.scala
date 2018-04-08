@@ -22,5 +22,5 @@ case class Input(child: p.PhysicalPlan) extends p.PhysicalPlan with t.UnaryTreeN
 
   override def inputRows = child.execute()
 
-  override def produce: Seq[Expression] = child.produce
+  //override def produce: Seq[Expression] = child.produce
 }

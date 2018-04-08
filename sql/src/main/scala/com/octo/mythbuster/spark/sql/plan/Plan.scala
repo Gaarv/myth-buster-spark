@@ -36,8 +36,6 @@ trait Plan[P <: Plan[P]] extends t.TreeNode[P] with Logging {
     s"${getClass.getSimpleName}()"
   }
 
-  def produce: Seq[Expression]
-
   def toSting(): String = titleForExplain
 
 }

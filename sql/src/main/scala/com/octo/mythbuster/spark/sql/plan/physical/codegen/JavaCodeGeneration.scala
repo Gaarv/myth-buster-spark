@@ -101,5 +101,5 @@ case class JavaCodeGeneration(child: p.PhysicalPlan) extends p.PhysicalPlan with
     newInstance.unwrapForScala()
   }
 
-  override def produce: Seq[Expression] = child.produce
+  //override def produce: Seq[Expression] = child.produce
 }
