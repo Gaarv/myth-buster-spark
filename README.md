@@ -1,5 +1,7 @@
 # MythBuster: Apache Spark
 
+IMPORTANT NOTE : not my original work, this is cloned from https://gitlab.octo.com/abesnard/myth-buster-spark
+
 ## Motivations
 L'objectif est d'extraire l'essence du code d'Apache Spark au sein d'un projet
 Scala simple, lisible, auto-portant et didactique.
